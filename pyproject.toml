@@ -1,0 +1,17 @@
+[project]
+name = "indemnipy"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.uv.workspace]
+members = [
+    "packages/*",
+]
+
+[dependency-groups]
+dev = [
+    "inline-snapshot>=0.35.3",
+    "pytest>=9.1.1",
+    "rich>=15.0.0",
+]
