@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, cast
 
@@ -76,12 +76,15 @@ _COERCE_TYPES = {
 
 @dataclass(frozen=True)
 class DateParsingOptions:
-    """
-    Options for parsing dates in Excel data.
+    """Options for parsing dates in Excel data.
 
     Attributes:
-        parse_dates: Whether to attempt to parse date values. This will convert strings that can be unambiguously parsed as dates into datetime objects. Defaults to True.
-        relaxed_about_day: If True, allows the day to be missing or invalid when parsing dates. In this case, the first of the month is used. If False, the day must be valid. Defaults to False.
+        parse_dates: When ``True``, strings that can be unambiguously parsed as
+            dates are converted to ``datetime`` objects.  Only applies to
+            columns that already contain at least one date value.
+        relaxed_about_day: When ``True``, accepts strings where the day is
+            missing or ambiguous, substituting the 1st of the month.  When
+            ``False`` the day must be present and unambiguous.
     """
 
     parse_dates: bool = True
@@ -95,9 +98,7 @@ def _cleanse_data(
     date_parsing_options = date_parsing_options or DateParsingOptions()
     cleansed = {}
 
-    for colname in data:
-        values = data[colname]
-
+    for colname, values in data.items():
         nonempty_indices = [i for i, v in enumerate(values) if v is not None]
         if not nonempty_indices:
             cleansed[colname] = values
@@ -151,11 +152,11 @@ def _dataframe_from_range(
     for row in data_range[1:]:
         for colname, cell in zip(data_range[0], row):
             if isinstance(colname, MergedCell):
-                raise ValueError(
+                raise TypeError(
                     f"Column name cell {colname.coordinate} is a merged cell, which is not supported."
                 )
             if isinstance(cell, MergedCell):
-                raise ValueError(
+                raise TypeError(
                     f"Data cell {cell.coordinate} is a merged cell, which is not supported."
                 )
             if colname.value is not None:
@@ -224,7 +225,7 @@ def _gently_parse_datetime(value: Any, relaxed_about_day: bool = False) -> Any: 
 
     """
     if isinstance(value, str):
-        default_a = datetime(2000, 1, 1).replace(
+        default_a = datetime(2000, 1, 1, tzinfo=timezone.utc).replace(
             hour=0, minute=0, second=0, microsecond=0
         )
         default_b = default_a.replace(day=2)

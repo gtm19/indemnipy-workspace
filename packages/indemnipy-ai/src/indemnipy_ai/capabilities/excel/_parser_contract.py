@@ -27,7 +27,7 @@ class _VbaParseResult:
     macros: tuple[_VbaMacro, ...]
 
 
-class _VbaParser(Protocol):
+class _VbaParser(Protocol):  # pyright: ignore[reportUnusedClass]
     def __call__(self, filepath: Path) -> _VbaParseResult: ...
 
 

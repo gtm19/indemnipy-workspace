@@ -1,7 +1,8 @@
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, NamedTuple, TypeAlias, TypedDict
+from typing import Any, NamedTuple, TypeAlias, TypedDict
 
 import duckdb
 from pydantic_ai import ModelRetry, Tool
@@ -37,7 +38,8 @@ class _SheetInfo(TypedDict):
     tables: list[str]
 
 
-class _QueryResult(TypedDict):
+@dataclass
+class _QueryResult:
     table_name: str
     row_count: int
     preview: str
@@ -389,11 +391,11 @@ class _ExcelToolset:
                 range="",
                 dataframe=results,
             )
-            return {
-                "table_name": table_name,
-                "row_count": len(results),
-                "preview": _print_df(results.head(preview_rows), hide_shape=True),
-            }
+            return _QueryResult(
+                table_name=table_name,
+                row_count=len(results),
+                preview=_print_df(results.head(preview_rows), hide_shape=True),
+            )
         except ModelRetry:
             raise
         except Exception as e:

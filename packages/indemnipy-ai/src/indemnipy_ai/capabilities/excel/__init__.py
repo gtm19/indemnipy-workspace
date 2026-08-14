@@ -9,12 +9,12 @@ from ._workbook_protocol import (
 )
 
 __all__ = [
+    "DateParsingOptions",
     "ExcelCapability",
     "ExcelDeps",
     "ExcelRuntimeState",
-    "DateParsingOptions",
-    "WorkbookProtocol",
-    "WorkbookTable",
-    "WorkbookSheet",
     "VbaSummary",
+    "WorkbookProtocol",
+    "WorkbookSheet",
+    "WorkbookTable",
 ]
