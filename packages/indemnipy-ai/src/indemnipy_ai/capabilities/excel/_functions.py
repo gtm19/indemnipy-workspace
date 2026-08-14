@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, cast
 
@@ -98,9 +98,7 @@ def _cleanse_data(
     date_parsing_options = date_parsing_options or DateParsingOptions()
     cleansed = {}
 
-    for colname in data:
-        values = data[colname]
-
+    for colname, values in data.items():
         nonempty_indices = [i for i, v in enumerate(values) if v is not None]
         if not nonempty_indices:
             cleansed[colname] = values
@@ -154,11 +152,11 @@ def _dataframe_from_range(
     for row in data_range[1:]:
         for colname, cell in zip(data_range[0], row):
             if isinstance(colname, MergedCell):
-                raise ValueError(
+                raise TypeError(
                     f"Column name cell {colname.coordinate} is a merged cell, which is not supported."
                 )
             if isinstance(cell, MergedCell):
-                raise ValueError(
+                raise TypeError(
                     f"Data cell {cell.coordinate} is a merged cell, which is not supported."
                 )
             if colname.value is not None:
@@ -227,7 +225,7 @@ def _gently_parse_datetime(value: Any, relaxed_about_day: bool = False) -> Any: 
 
     """
     if isinstance(value, str):
-        default_a = datetime(2000, 1, 1).replace(
+        default_a = datetime(2000, 1, 1, tzinfo=timezone.utc).replace(
             hour=0, minute=0, second=0, microsecond=0
         )
         default_b = default_a.replace(day=2)
