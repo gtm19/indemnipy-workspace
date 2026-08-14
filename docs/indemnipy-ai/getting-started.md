@@ -49,6 +49,7 @@ from pathlib import Path
 from indemnipy_ai.capabilities.excel import ExcelCapability, ExcelRuntimeState
 from pydantic_ai import Agent
 
+
 @dataclass
 class Deps:
     excel_runtime_state: ExcelRuntimeState = field(default_factory=ExcelRuntimeState)
