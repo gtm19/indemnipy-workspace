@@ -65,8 +65,8 @@ class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
             columns are coerced when loading workbook data.
     """
 
-    id: str = "indemnipy-ai.capabilities.excel"
-    description: str = "Provides tools for reading and analysing Excel files."
+    id: str | None = "indemnipy-ai.capabilities.excel"
+    description: str | None = "Provides tools for reading and analysing Excel files."
 
     runtime_state: "ExcelRuntimeState" = field(default_factory=ExcelRuntimeState)
     date_parsing_options: DateParsingOptions = field(
@@ -98,10 +98,12 @@ class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
             date_parsing_options=self.date_parsing_options,
         )
 
-    def get_description(self) -> str:
+    @override
+    def get_description(self) -> str | None:
         """Get the description of the capability."""
         return self.description
 
+    @override
     def get_toolset(self) -> FunctionToolset:
         """
         Get the toolset for Excel capabilities.
