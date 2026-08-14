@@ -1,122 +1,27 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from functools import cached_property
 from pathlib import Path
+from typing import Any, override
+
+from openpyxl import load_workbook
 
 from indemnipy_ai.capabilities.excel._functions import (
-    oletools_vba_parser,
+    DateParsingOptions,
+    _dataframe_from_range,
+    _oletools_vba_parser,
+    _openpyxl_table_parser,
 )
-from indemnipy_ai.capabilities.excel._parser_contract import VbaParser
+from indemnipy_ai.capabilities.excel._parser_contract import _VbaParser
+from indemnipy_ai.capabilities.excel._workbook_protocol import (
+    VbaSummary,
+    WorkbookProtocol,
+    WorkbookSheet,
+    WorkbookTable,
+)
 
 
 @dataclass
-class VbaMacro:
-    """Represents a single extracted VBA macro stream.
-
-    Attributes:
-        filename: Container file that holds the VBA project data.
-        stream_path: Path of the stream within the OLE or workbook structure.
-        vba_filename: VBA module or class filename.
-        vba_code: Raw VBA source code extracted from the stream.
-    """
-
-    filename: str
-    stream_path: str
-    vba_filename: str
-    vba_code: str
-
-
-@dataclass
-class VbaAnalysisResult:
-    """Represents one heuristic analysis result.
-
-    Attributes:
-        kw_type: Category of the finding, such as `Suspicious`.
-        keyword: Keyword or pattern that triggered the finding.
-        description: Human-readable explanation of the finding.
-    """
-
-    kw_type: str
-    keyword: str
-    description: str
-
-
-@dataclass
-class VbaSummary:
-    """Aggregates extracted VBA macros and parser analysis for one file.
-
-    Attributes:
-        filepath: Workbook path that was inspected.
-        analysis_results: Heuristic findings returned by macro analysis.
-        macros: Extracted VBA macro streams.
-    """
-
-    filepath: Path
-    analysis_results: list[VbaAnalysisResult]
-    macros: list[VbaMacro]
-
-    @classmethod
-    def from_file(
-        cls, filepath: Path, parser: VbaParser = oletools_vba_parser
-    ) -> "VbaSummary":
-        """Build a summary from an Excel workbook or OLE document.
-
-        Args:
-            filepath: Path to the workbook to inspect.
-
-        Returns:
-            A summary containing any detected analysis findings and extracted
-            VBA macro streams.
-        """
-
-        parse_result = parser(filepath)
-        return cls(
-            filepath=filepath,
-            analysis_results=[
-                VbaAnalysisResult(
-                    kw_type=r.kw_type, keyword=r.keyword, description=r.description
-                )
-                for r in parse_result.analysis_results
-            ],
-            macros=[
-                VbaMacro(
-                    filename=m.filename,
-                    stream_path=m.stream_path,
-                    vba_filename=m.vba_filename,
-                    vba_code=m.vba_code,
-                )
-                for m in parse_result.macros
-            ],
-        )
-
-    def to_md(self) -> str:
-        """Render the summary as Markdown.
-
-        Returns:
-            A Markdown document containing analysis results followed by each
-            extracted macro and its VBA source code.
-        """
-
-        content: str = f"# VBA Macros in {self.filepath.name}\n"
-
-        if self.analysis_results:
-            content += f"\n## Analysis Results\nThere are {len(self.analysis_results)} observations.\n"
-            for i, result in enumerate(self.analysis_results):
-                content += f"{i + 1}. Type: {result.kw_type}, Keyword: {result.keyword}, Description: {result.description}\n"
-
-        for i, macro in enumerate(self.macros):
-            content += f"\n## Macro {i + 1}\n"
-            content += f"Filename: {macro.filename}\n"
-            content += f"Stream Path: {macro.stream_path}\n"
-            content += f"VBA Filename: {macro.vba_filename}\n\n"
-            content += f"""### VBA Code:
-```vba
-{macro.vba_code}
-```
-"""
-        return content
-
-
-@dataclass
-class ExcelWorkbook:
+class _ExcelWorkbook(WorkbookProtocol):
     """Represents an Excel workbook file.
 
     Attributes:
@@ -125,19 +30,121 @@ class ExcelWorkbook:
     """
 
     filepath: Path
-    vba_summary: VbaSummary | None = None
 
-    @classmethod
-    def from_file(cls, filepath: Path) -> "ExcelWorkbook":
-        """Build an ExcelWorkbook instance from a file.
+    _vba_parser: _VbaParser = _oletools_vba_parser
+    date_parsing_options: DateParsingOptions | None = field(default=None, repr=False)
 
-        Args:
-            filepath: Path to the workbook to inspect.
+    @cached_property
+    def _workbook(self):
+        """Load the workbook using openpyxl."""
+        return load_workbook(str(self.filepath), data_only=True)
+
+    @cached_property
+    @override
+    def vba_summary(self) -> VbaSummary | None:  # pyright: ignore[reportIncompatibleMethodOverride]
+        """Return a summary of any detected VBA macros and analysis results.
 
         Returns:
-            An ExcelWorkbook instance with an optional VBA summary if macros are present.
+            A VbaSummary instance if macros are present, otherwise None.
         """
-        vba_summary = VbaSummary.from_file(filepath)
+        vba_summary: VbaSummary = VbaSummary.from_file(
+            self.filepath, parser=self._vba_parser
+        )
         if not vba_summary.macros and not vba_summary.analysis_results:
-            vba_summary = None
-        return cls(filepath=filepath, vba_summary=vba_summary)
+            return None
+        return vba_summary
+
+    @override
+    def add_table_from_range(
+        self,
+        sheet_name: str,
+        range_str: str,
+        table_name: str,
+    ) -> None:
+        """Add a new table to the workbook.
+
+        Args:
+            sheet_name: The name of the sheet containing the new table.
+            range_str: The Excel-style range string for the new table (e.g., "A1:C3").
+            table_name: The name of the new table.
+        """
+        target_sheet = next(sheet for sheet in self.sheets if sheet.name == sheet_name)
+        new_table = WorkbookTable(
+            name=table_name,
+            sheet_name=sheet_name,
+            range=range_str,
+            dataframe=_dataframe_from_range(
+                self._workbook[sheet_name],
+                range_str,
+                date_parsing_options=self.date_parsing_options,
+            ),
+        )
+        target_sheet.tables.append(new_table)
+        return None
+
+    @cached_property
+    @override
+    def sheets(self) -> list[WorkbookSheet]:  # pyright: ignore[reportIncompatibleMethodOverride]
+        """Return a list of sheet names in the workbook.
+
+        Returns:
+            A list of WorkbookSheet instances representing the sheets in the workbook.
+        """
+        return self._get_sheets()
+
+    def _get_sheets(self) -> list[WorkbookSheet]:
+        tables = _openpyxl_table_parser(
+            self._workbook, date_parsing_options=self.date_parsing_options
+        )
+        return [
+            WorkbookSheet(
+                name=sheet.title,
+                range=sheet.dimensions,
+                freeze_panes=sheet.freeze_panes,
+                min_column=sheet.min_column,
+                min_row=sheet.min_row,
+                max_column=sheet.max_column,
+                max_row=sheet.max_row,
+                state=sheet.sheet_state,
+                tables=[
+                    WorkbookTable(
+                        name=table.name,
+                        sheet_name=table.sheet_name,
+                        range=table.range,
+                        dataframe=table.dataframe,
+                    )
+                    for table in tables.values()
+                    if table.sheet_name == sheet.title
+                ],
+            )
+            for sheet in self._workbook.worksheets
+        ]
+
+    @override
+    def get_range(self, sheet_name: str, range_str: str = "A1:J100") -> list[list[Any]]:
+        """
+        Get the values in a specified range from a given sheet.
+
+        Args:
+            sheet_name: The name of the sheet to retrieve the range from.
+            range_str: The Excel-style range string (e.g., "A1:C3").
+
+        Returns:
+            A list of lists containing the values in the specified range.
+        """
+        sheet = self._workbook[sheet_name]
+        return [[cell.value for cell in row] for row in sheet[range_str]]
+
+    def agent_summary(self) -> str:
+        """Generate a summary of the workbook for agent use.
+
+        Returns:
+            A string summary of the workbook, including sheets, tables, and VBA macros.
+        """
+        summary = f"Workbook: {self.filepath.name} ({self.filepath!r})\n"
+        for sheet in self.sheets:
+            summary += f"  Sheet: {sheet.name!r}, Range: {sheet.range!r}\n"
+            for table in sheet.tables:
+                summary += f"    Table: {table.name!r}, Range: {table.range!r}\n"
+
+        return summary

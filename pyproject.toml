@@ -12,6 +12,10 @@ members = [
 [dependency-groups]
 dev = [
     "inline-snapshot>=0.35.3",
+    "pre-commit>=4.6.2",
     "pytest>=9.1.1",
     "rich>=15.0.0",
+]
+docs = [
+    "zensical==0.0.54",
 ]

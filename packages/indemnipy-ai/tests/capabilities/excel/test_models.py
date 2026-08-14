@@ -3,10 +3,13 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from indemnipy_ai.capabilities.excel._models import VbaSummary
+from indemnipy_ai.capabilities.excel._functions import (
+    _oletools_vba_parser as oletools_vba_parser,
+)
+from indemnipy_ai.capabilities.excel._workbook_protocol import VbaSummary
 from inline_snapshot import snapshot
 
-TEST_DATA_DIR = Path("packages/indemnipy-ai/tests/data")
+TEST_DATA_DIR = Path(__file__).parent.parent.parent / "data"
 
 
 @pytest.mark.parametrize(
@@ -16,9 +19,6 @@ TEST_DATA_DIR = Path("packages/indemnipy-ai/tests/data")
             TEST_DATA_DIR / "Vantris_Pharmaceuticals_STP_Submission_2026.xlsm",
             snapshot(
                 {
-                    "filepath": Path(
-                        "packages/indemnipy-ai/tests/data/Vantris_Pharmaceuticals_STP_Submission_2026.xlsm"
-                    ),
                     "analysis_results": [
                         {
                             "kw_type": "Suspicious",
@@ -205,51 +205,7 @@ Sub RunFullSubmissionCheck()\r
     SummarizeByStorageType\r
 End Sub\r
 \r
-""",
-                        },
-                        {
-                            "filename": "xl/vbaProject.bin",
-                            "stream_path": "VBA/Sheet1",
-                            "vba_filename": "Sheet1.cls",
-                            "vba_code": """\
-Attribute VB_Name = "Sheet1"\r
-Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"\r
-Attribute VB_GlobalNameSpace = False\r
-Attribute VB_Creatable = False\r
-Attribute VB_PredeclaredId = True\r
-Attribute VB_Exposed = True\r
-Attribute VB_TemplateDerived = False\r
-Attribute VB_Customizable = True\r
-""",
-                        },
-                        {
-                            "filename": "xl/vbaProject.bin",
-                            "stream_path": "VBA/Sheet2",
-                            "vba_filename": "Sheet2.cls",
-                            "vba_code": """\
-Attribute VB_Name = "Sheet2"\r
-Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"\r
-Attribute VB_GlobalNameSpace = False\r
-Attribute VB_Creatable = False\r
-Attribute VB_PredeclaredId = True\r
-Attribute VB_Exposed = True\r
-Attribute VB_TemplateDerived = False\r
-Attribute VB_Customizable = True\r
-""",
-                        },
-                        {
-                            "filename": "xl/vbaProject.bin",
-                            "stream_path": "VBA/Sheet3",
-                            "vba_filename": "Sheet3.cls",
-                            "vba_code": """\
-Attribute VB_Name = "Sheet3"\r
-Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"\r
-Attribute VB_GlobalNameSpace = False\r
-Attribute VB_Creatable = False\r
-Attribute VB_PredeclaredId = True\r
-Attribute VB_Exposed = True\r
-Attribute VB_TemplateDerived = False\r
-Attribute VB_Customizable = True\r
+\r
 """,
                         },
                         {
@@ -265,6 +221,55 @@ Attribute VB_PredeclaredId = True\r
 Attribute VB_Exposed = True\r
 Attribute VB_TemplateDerived = False\r
 Attribute VB_Customizable = True\r
+\r
+""",
+                        },
+                        {
+                            "filename": "xl/vbaProject.bin",
+                            "stream_path": "VBA/Sheet3",
+                            "vba_filename": "Sheet3.cls",
+                            "vba_code": """\
+Attribute VB_Name = "Sheet3"\r
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"\r
+Attribute VB_GlobalNameSpace = False\r
+Attribute VB_Creatable = False\r
+Attribute VB_PredeclaredId = True\r
+Attribute VB_Exposed = True\r
+Attribute VB_TemplateDerived = False\r
+Attribute VB_Customizable = True\r
+\r
+""",
+                        },
+                        {
+                            "filename": "xl/vbaProject.bin",
+                            "stream_path": "VBA/Sheet2",
+                            "vba_filename": "Sheet2.cls",
+                            "vba_code": """\
+Attribute VB_Name = "Sheet2"\r
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"\r
+Attribute VB_GlobalNameSpace = False\r
+Attribute VB_Creatable = False\r
+Attribute VB_PredeclaredId = True\r
+Attribute VB_Exposed = True\r
+Attribute VB_TemplateDerived = False\r
+Attribute VB_Customizable = True\r
+\r
+""",
+                        },
+                        {
+                            "filename": "xl/vbaProject.bin",
+                            "stream_path": "VBA/Sheet1",
+                            "vba_filename": "Sheet1.cls",
+                            "vba_code": """\
+Attribute VB_Name = "Sheet1"\r
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"\r
+Attribute VB_GlobalNameSpace = False\r
+Attribute VB_Creatable = False\r
+Attribute VB_PredeclaredId = True\r
+Attribute VB_Exposed = True\r
+Attribute VB_TemplateDerived = False\r
+Attribute VB_Customizable = True\r
+\r
 """,
                         },
                     ],
@@ -275,9 +280,6 @@ Attribute VB_Customizable = True\r
             TEST_DATA_DIR / "Vantris_Pharmaceuticals_STP_Submission_2026.xlsx",
             snapshot(
                 {
-                    "filepath": Path(
-                        "packages/indemnipy-ai/tests/data/Vantris_Pharmaceuticals_STP_Submission_2026.xlsx"
-                    ),
                     "analysis_results": [],
                     "macros": [],
                 }
@@ -286,5 +288,7 @@ Attribute VB_Customizable = True\r
     ],
 )
 def test_vba_extraction(file_path: Path, expected: dict[str, Any]):
-    summary = VbaSummary.from_file(file_path)
-    assert asdict(summary) == expected
+    summary = VbaSummary.from_file(file_path, parser=oletools_vba_parser)
+    d = asdict(summary)
+    assert d.pop("filepath") == file_path
+    assert d == expected

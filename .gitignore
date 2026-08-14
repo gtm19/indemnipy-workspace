@@ -227,3 +227,6 @@ __marimo__/
 
 # .dev directory
 .dev/
+
+# ignore open LibreOffice files
+**/*#
