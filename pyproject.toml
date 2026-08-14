@@ -31,3 +31,4 @@ docs = [
 
 [tool.pyright]
 pythonVersion = "3.10"
+failOnWarnings = false

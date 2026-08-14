@@ -1,7 +1,8 @@
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, NamedTuple, TypeAlias, TypedDict
+from typing import Any, NamedTuple, TypeAlias, TypedDict
 
 import duckdb
 from pydantic_ai import ModelRetry, Tool

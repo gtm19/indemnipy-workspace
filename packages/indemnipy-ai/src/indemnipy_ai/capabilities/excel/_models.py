@@ -91,7 +91,6 @@ class _ExcelWorkbook(WorkbookProtocol):
             ),
         )
         target_sheet.tables.append(new_table)
-        return None
 
     @cached_property
     @override
