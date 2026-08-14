@@ -1,11 +1,12 @@
 import functools
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol, override, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from pydantic_ai import RunContext
 from pydantic_ai.capabilities import AbstractCapability
 from pydantic_ai.toolsets import FunctionToolset
+from typing_extensions import override
 
 from indemnipy_ai.capabilities.excel._capability_state import ExcelRuntimeState
 from indemnipy_ai.capabilities.excel._functions import DateParsingOptions
@@ -22,14 +23,18 @@ def _load_capability_instructions() -> str:
 
 @runtime_checkable
 class ExcelDeps(Protocol):
-    """
-    Dependency protocol for Excel capabilities.
+    """Dependency protocol for Excel capabilities.
 
-    Pass the same instance across multiple agent runs to preserve loaded workbooks
-    and derived tables between turns in a multi-turn conversation.
+    Any object that has an ``excel_runtime_state`` attribute of type
+    [ExcelRuntimeState][indemnipy_ai.capabilities.excel.ExcelRuntimeState]
+    satisfies this protocol — no explicit inheritance is required.
+
+    Pass the same instance across multiple agent runs to preserve loaded
+    workbooks and derived tables between turns in a multi-turn conversation.
 
     Attributes:
-        excel_runtime_state: Mutable state holding loaded workbooks and derived tables.
+        excel_runtime_state: Mutable state holding loaded workbooks and derived
+            tables.
     """
 
     excel_runtime_state: ExcelRuntimeState
@@ -37,11 +42,31 @@ class ExcelDeps(Protocol):
 
 @dataclass
 class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
-    """
-    Capability for working with Excel files.
+    """Gives an agent the ability to read and analyse Excel files.
+
+    Attach this capability to a pydantic-ai ``Agent`` to register a set of
+    Excel-reading tools and built-in workflow instructions.  The agent can then
+    load local ``.xlsx`` and ``.xlsm`` files, inspect worksheets and named
+    tables, run DuckDB SQL queries, and store derived results that persist
+    across turns.
+
+    When the agent runs, [`for_run`][indemnipy_ai.capabilities.excel.ExcelCapability.for_run]
+    checks whether the deps object
+    implements [`ExcelDeps`][indemnipy_ai.capabilities.excel.ExcelDeps].  If it does, the existing
+    ``excel_runtime_state`` is reused so workbooks and derived tables from
+    previous turns remain available.  Otherwise a fresh
+    [`ExcelRuntimeState`][indemnipy_ai.capabilities.excel.ExcelRuntimeState] is created for the run.
+
+    Attributes:
+        id: Capability identifier registered with the agent's toolset.
+        runtime_state: Fallback state used when deps does not implement
+            [`ExcelDeps`][indemnipy_ai.capabilities.excel.ExcelDeps].
+        date_parsing_options: Controls how mixed-format or ambiguous date
+            columns are coerced when loading workbook data.
     """
 
-    id: str | None = "indemnipy-ai.capabilities.excel"
+    id: str = "indemnipy-ai.capabilities.excel"
+    description: str = "Provides tools for reading and analysing Excel files."
 
     runtime_state: "ExcelRuntimeState" = field(default_factory=ExcelRuntimeState)
     date_parsing_options: DateParsingOptions = field(
@@ -50,7 +75,6 @@ class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
         )
     )
 
-    @override
     async def for_run(self, ctx: RunContext[ExcelDeps | Any]) -> "ExcelCapability":
         """
         Prepare the capability for a run.
@@ -74,11 +98,10 @@ class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
             date_parsing_options=self.date_parsing_options,
         )
 
-    @override
     def get_description(self) -> str:
-        return "Capability for working with Excel files." + (self.description or "")
+        """Get the description of the capability."""
+        return self.description
 
-    @override
     def get_toolset(self) -> FunctionToolset:
         """
         Get the toolset for Excel capabilities.

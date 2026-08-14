@@ -1,18 +1,22 @@
 [project]
-site_url = "https://www.example.com/"
-site_name = "Documentation"
-# site_description = "Your project description"
-# site_author = "Your name"
+site_url = "https://docs.indemnipy.com"
+site_name = "indemnipy"
+site_description = "Python packages for insurance"
+site_author = "Gareth Maddock"
 
-# copyright = "Copyright &copy; 2026 Your name"
+# copyright = "Copyright &copy; 2026 Gareth Maddock"
 
-# repo_url = "https://github.com/user/repo"
-# repo_name = "user/repo"
+repo_url = "https://github.com/gtm19/indemnipy-workspace"
+repo_name = "gtm19/indemnipy-workspace"
 # edit_uri = "edit/main/docs/"
 
 nav = [
-  { "Get started" = "index.md" },
-  { "Markdown in 5min" = "markdown.md" },
+  { "indemnipy" = "index.md" },
+  { "indemnipy-ai" = [
+    { "Overview" = "indemnipy-ai/overview.md" },
+    { "Getting Started" = "indemnipy-ai/getting-started.md" },
+    { "API Reference" = "indemnipy-ai/api-reference.md" },
+  ] },
 ]
 
 # extra_css = ["stylesheets/extra.css"]
@@ -43,7 +47,7 @@ features = [
   "navigation.path",
   # "navigation.prune",
   "navigation.sections",
-  # "navigation.tabs",
+  "navigation.tabs",
   # "navigation.tabs.sticky",
   "navigation.top",
   "navigation.tracking",
@@ -93,46 +97,41 @@ attr_list = {}
 def_list = {}
 footnotes = {}
 md_in_html = {}
-toc = {
-  permalink = true
-}
-pymdownx.arithmatex = {
-  generic = true
-}
+toc = { permalink = true }
+pymdownx.arithmatex = { generic = true }
 pymdownx.betterem = {}
 pymdownx.caret = {}
 pymdownx.details = {}
-pymdownx.emoji = {
-  emoji_generator = "zensical.extensions.emoji.to_svg",
-  emoji_index = "zensical.extensions.emoji.twemoji",
-}
-pymdownx.highlight = {
-  anchor_linenums = true,
-  line_spans = "__span",
-  pygments_lang_class = true,
-}
+pymdownx.emoji = { emoji_generator = "zensical.extensions.emoji.to_svg", emoji_index = "zensical.extensions.emoji.twemoji" }
+pymdownx.highlight = { anchor_linenums = true, line_spans = "__span", pygments_lang_class = true }
 pymdownx.inlinehilite = {}
 pymdownx.keys = {}
 pymdownx.magiclink = {}
 pymdownx.mark = {}
 pymdownx.smartsymbols = {}
-# pymdownx.snippets = {
-#   base_path = "includes",
-# }
-pymdownx.superfences = {
-  custom_fences = [
-    {
-      name = "mermaid",
-      class = "mermaid",
-      format = "pymdownx.superfences.fence_code_format",
-    },
-  ],
-}
-pymdownx.tabbed = {
-  alternate_style = true,
-  combine_header_slug = true
-}
-pymdownx.tasklist = {
-  custom_checkbox = true
-}
+# pymdownx.snippets = { base_path = "includes" }
+pymdownx.superfences = { custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+] }
+pymdownx.tabbed = { alternate_style = true, combine_header_slug = true }
+pymdownx.tasklist = { custom_checkbox = true }
 pymdownx.tilde = {}
+
+[project.plugins.mkdocstrings.handlers.python]
+paths = ["packages/indemnipy-ai/src"]
+inventories = [
+  "https://docs.python.org/3/objects.inv",
+  "https://docs.pydantic.dev/latest/objects.inv",
+  "https://pydantic.dev/docs/ai/objects.inv",
+  "https://docs.pola.rs/api/python/stable/objects.inv",
+]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "google"
+show_source = false
+show_bases = true
+show_root_heading = true
+members_order = "source"
+separate_signature = true
+show_signature_annotations = true
+filters = ["!^_"]

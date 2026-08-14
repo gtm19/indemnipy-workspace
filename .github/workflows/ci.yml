@@ -39,7 +39,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-uv
-      - run: uv sync --all-packages --group dev --locked
       - name: Run tests
         id: pytest
-        run: uv run pytest
+        run: uvx nox -s tests
+
+  smoke:
+    name: Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-uv
+      - name: Run smoke test
+        run: uvx nox -s smoke

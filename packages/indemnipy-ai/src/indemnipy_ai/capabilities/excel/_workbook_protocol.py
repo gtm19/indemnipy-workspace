@@ -13,12 +13,19 @@ from indemnipy_ai.capabilities.excel._parser_contract import (
 
 @dataclass
 class VbaSummary:
-    """Aggregates extracted VBA macros and parser analysis for one file.
+    """Aggregates extracted VBA macros and heuristic analysis for one file.
+
+    Produced by [`WorkbookProtocol.vba_summary`][indemnipy_ai.capabilities.excel.WorkbookProtocol.vba_summary]
+    when macros are detected
+    in a workbook.  Use [`to_md`][indemnipy_ai.capabilities.excel.VbaSummary.to_md] to render the summary as a Markdown
+    document suitable for passing to an agent.
 
     Attributes:
-        filepath: Workbook path that was inspected.
-        analysis_results: Heuristic findings returned by macro analysis.
-        macros: Extracted VBA macro streams.
+        filepath: Path to the workbook that was inspected.
+        analysis_results: Heuristic findings returned by macro analysis (keyword
+            type, keyword, and description).
+        macros: Extracted VBA macro streams (filename, stream path, VBA
+            filename, and source code).
     """
 
     filepath: Path
@@ -34,7 +41,7 @@ class VbaSummary:
 
         Returns:
             A summary containing any detected analysis findings and extracted
-            VBA macro streams.
+                VBA macro streams.
         """
         parse_result = parser(filepath)
         return cls(
@@ -48,7 +55,7 @@ class VbaSummary:
 
         Returns:
             A Markdown document containing analysis results followed by each
-            extracted macro and its VBA source code.
+                extracted macro and its VBA source code.
         """
 
         content: str = f"# VBA Macros in {self.filepath.name}\n"
@@ -73,45 +80,72 @@ class VbaSummary:
 
 @dataclass
 class WorkbookTable:
+    """A single table extracted from an Excel workbook, or produced by a query.
+
+    Workbook tables come from named Excel tables or ranges registered with
+    ``add_table_from_range``.  Derived tables are created by
+    ``query_store_and_preview`` and live in
+    [`ExcelRuntimeState.derived_tables`][indemnipy_ai.capabilities.excel.ExcelRuntimeState.derived_tables].
+    For both types, the ``dataframe`` attribute;
+    for those, ``sheet_name`` and ``range`` are empty strings.
+    """
+
     name: str
     """The name of the table as defined in the workbook."""
     sheet_name: str
     """The name of the sheet where the table is located."""
     range: str
-    """The range of cells occupied by the table. e.g. "A1:C10"."""
+    """The range of cells occupied by the table, e.g. ``"A1:C10"``."""
     dataframe: pl.DataFrame = field(repr=False)
-    """The table's data represented as a Polars DataFrame."""
+    """The table's data as a Polars DataFrame."""
 
 
 @dataclass
 class WorkbookSheet:
+    """Metadata for a single worksheet in a loaded workbook.
+
+    Returned via :attr:`WorkbookProtocol.sheets`.  The ``tables`` list
+    contains only *named* Excel tables.  Sheets with tabular data that has not
+    been formally defined as a table will still appear here but with an empty
+    ``tables`` list; use ``get_range`` to read their raw contents.
+    """
+
     name: str
     """The name of the sheet in the workbook."""
     range: str
-    """The range of cells occupied by the sheet. e.g. "A1:C10"."""
+    """The full cell range occupied by the sheet, e.g. ``"A1:Z100"``."""
     freeze_panes: str | None
-    """The cell reference for the freeze panes position, if any. e.g. "A1". The presence of this might indicate tabular information (even if not formally defined as a table)."""
+    """Freeze panes anchor cell, e.g. ``"B2"``, or ``None``.  Its presence may
+    indicate tabular data even without a formally defined table."""
     min_column: int
-    """The minimum column index of the table (1-based)."""
+    """1-based index of the first used column."""
     min_row: int
-    """The minimum row index of the table (1-based)."""
+    """1-based index of the first used row."""
     max_column: int
-    """The maximum column index of the table (1-based)."""
+    """1-based index of the last used column."""
     max_row: int
-    """The maximum row index of the table (1-based)."""
+    """1-based index of the last used row."""
     state: str
-    """The visibility state of the sheet. Can be 'visible', 'hidden'."""
+    """Visibility state of the sheet: ``'visible'`` or ``'hidden'``."""
     tables: list[WorkbookTable]
-    """A list of tables defined in the sheet."""
+    """Named tables defined on this sheet."""
 
 
 class WorkbookProtocol(Protocol):
+    """Structural protocol for a loaded Excel workbook.
+
+    Instances are created internally and stored in
+    :attr:`ExcelRuntimeState.workbooks <indemnipy_ai.capabilities.excel.ExcelRuntimeState.workbooks>`.
+    You will not normally construct these directly, but you can read them after
+    a run to inspect what the agent loaded.
+    """
+
     filepath: Path
+    """Path to the source file."""
 
     @property
     def file_name(self) -> str:
-        """
-        Return the name of the workbook file.
+        """File name without directory path.
 
         Returns:
             The name of the workbook file as a string.
@@ -120,57 +154,52 @@ class WorkbookProtocol(Protocol):
 
     @property
     def vba_summary(self) -> VbaSummary | None:
-        """
-        Return a summary of any detected VBA macros and analysis results.
+        """VBA macro summary, or ``None`` if the workbook contains no macros.
 
         Returns:
-            A VbaSummary instance if macros are present, otherwise None.
+            A `VbaSummary` instance if macros are present, otherwise
+                ``None``.
         """
         ...
 
     @property
     def sheets(self) -> list[WorkbookSheet]:
-        """
-        Return a list of sheet names in the workbook.
+        """All worksheets in the workbook.
 
         Returns:
-            A list of WorkbookSheet instances representing the sheets in the workbook.
+            A list of :class:`WorkbookSheet` instances.
         """
         ...
 
     def get_range(self, sheet_name: str, range_str: str) -> list[list[Any]]:
-        """
-        Get the values in a specified range of a sheet.
+        """Return raw cell values for a given range.
 
         Args:
-            sheet_name: The name of the sheet.
-            range_str: The Excel-style range string (e.g., "A1:C3").
+            sheet_name: Name of the sheet to read from.
+            range_str: Excel-style range string, e.g. ``"A1:C3"``.
 
         Returns:
-            A list of lists containing the values in the specified range.
+            A list of rows, each row being a list of cell values.
         """
         ...
 
     def add_table_from_range(
         self, sheet_name: str, range_str: str, table_name: str
     ) -> None:
-        """
-        Add a new table to the workbook, given a sheet name, range, and table name.
-
-        This method should internally create a new WorkbookTable instance and add it to the workbook's tables dictionary.
+        """Register a cell range as a named table on a sheet.
 
         Args:
-            sheet_name: The name of the sheet containing the new table.
-            range_str: The Excel-style range string for the new table (e.g., "A1:C3").
-            table_name: The name of the new table.
+            sheet_name: Name of the sheet containing the range.
+            range_str: Excel-style range string, e.g. ``"A1:C3"``.
+            table_name: Name to assign to the new table.  Must be unique within
+                the sheet.
         """
         ...
 
     def agent_summary(self) -> str:
-        """
-        Return a summary of the workbook's contents, including sheets and tables.
+        """Return a short text summary of the workbook's sheets and tables.
 
         Returns:
-            A string summarizing the workbook's sheets and tables.
+            A string suitable for passing to an agent as context.
         """
         ...

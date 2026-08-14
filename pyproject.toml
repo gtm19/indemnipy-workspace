@@ -2,12 +2,17 @@
 name = "indemnipy"
 version = "0.1.0"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+  "indemnipy-ai>=0.1.0",
+]
 
 [tool.uv.workspace]
 members = [
     "packages/*",
 ]
+
+[tool.uv.sources]
+indemnipy-ai = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -16,7 +21,13 @@ dev = [
     "pre-commit>=4.6.2",
     "pytest>=9.1.1",
     "rich>=15.0.0",
+    "logfire[system-metrics]>=4.40.0",
+    "pydantic-ai-harness[codemode]>=0.18.0",
 ]
 docs = [
     "zensical==0.0.54",
+    "mkdocstrings[python]>=0.27",
 ]
+
+[tool.pyright]
+pythonVersion = "3.10"

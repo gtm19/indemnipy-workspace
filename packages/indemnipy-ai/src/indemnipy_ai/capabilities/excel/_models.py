@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
-from typing import Any, override
+from typing import Any
 
 from openpyxl import load_workbook
+from typing_extensions import override
 
 from indemnipy_ai.capabilities.excel._functions import (
     DateParsingOptions,

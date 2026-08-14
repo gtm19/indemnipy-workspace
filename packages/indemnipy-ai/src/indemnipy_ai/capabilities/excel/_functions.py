@@ -76,12 +76,15 @@ _COERCE_TYPES = {
 
 @dataclass(frozen=True)
 class DateParsingOptions:
-    """
-    Options for parsing dates in Excel data.
+    """Options for parsing dates in Excel data.
 
     Attributes:
-        parse_dates: Whether to attempt to parse date values. This will convert strings that can be unambiguously parsed as dates into datetime objects. Defaults to True.
-        relaxed_about_day: If True, allows the day to be missing or invalid when parsing dates. In this case, the first of the month is used. If False, the day must be valid. Defaults to False.
+        parse_dates: When ``True``, strings that can be unambiguously parsed as
+            dates are converted to ``datetime`` objects.  Only applies to
+            columns that already contain at least one date value.
+        relaxed_about_day: When ``True``, accepts strings where the day is
+            missing or ambiguous, substituting the 1st of the month.  When
+            ``False`` the day must be present and unambiguous.
     """
 
     parse_dates: bool = True
