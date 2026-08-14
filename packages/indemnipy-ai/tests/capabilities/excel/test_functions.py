@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import pytest
@@ -15,14 +15,14 @@ from indemnipy_ai.capabilities.excel._functions import (
 @pytest.mark.parametrize(
     "input_value, expected_output",
     [
-        ("2023-01-15", datetime(2023, 1, 15)),
-        ("15/01/2023", datetime(2023, 1, 15)),
-        ("January 15, 2023", datetime(2023, 1, 15)),
-        ("15 Jan 2023", datetime(2023, 1, 15)),
-        ("01-15-2023", datetime(2023, 1, 15)),
-        ("2023/01/15 4:10:12", datetime(2023, 1, 15, 4, 10, 12)),
-        ("2023/01/15 4:30am", datetime(2023, 1, 15, 4, 30)),
-        ("2023.01.15 4am", datetime(2023, 1, 15, 4)),
+        ("2023-01-15", datetime(2023, 1, 15, tzinfo=timezone.utc)),
+        ("15/01/2023", datetime(2023, 1, 15, tzinfo=timezone.utc)),
+        ("January 15, 2023", datetime(2023, 1, 15, tzinfo=timezone.utc)),
+        ("15 Jan 2023", datetime(2023, 1, 15, tzinfo=timezone.utc)),
+        ("01-15-2023", datetime(2023, 1, 15, tzinfo=timezone.utc)),
+        ("2023/01/15 4:10:12", datetime(2023, 1, 15, 4, 10, 12, tzinfo=timezone.utc)),
+        ("2023/01/15 4:30am", datetime(2023, 1, 15, 4, 30, tzinfo=timezone.utc)),
+        ("2023.01.15 4am", datetime(2023, 1, 15, 4, tzinfo=timezone.utc)),
     ],
 )
 def test_should_always_parse(
@@ -64,8 +64,8 @@ def test_should_never_parse(input_value: Any, relaxed_about_day: bool):
 @pytest.mark.parametrize(
     "input_value, expected_output",
     [
-        ("October 2025", datetime(2025, 10, 1)),
-        ("2020 Apr", datetime(2020, 4, 1)),
+        ("October 2025", datetime(2025, 10, 1, tzinfo=timezone.utc)),
+        ("2020 Apr", datetime(2020, 4, 1, tzinfo=timezone.utc)),
     ],
 )
 def test_should_parse_only_when_relaxed(input_value: Any, expected_output: datetime):
