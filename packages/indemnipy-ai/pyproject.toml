@@ -17,7 +17,7 @@ dependencies = [
     "python-dateutil>=2.9.0",
     "typing-extensions>=4.16.0",
 ]
-license = "LicenseRef-Proprietary"
+license = "MIT"
 license-files = ["LICEN[CS]E"]
 
 [build-system]
