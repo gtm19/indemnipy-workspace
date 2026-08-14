@@ -40,6 +40,16 @@ class _ExcelWorkbook(WorkbookProtocol):
         return load_workbook(str(self.filepath), data_only=True)
 
     @cached_property
+    def file_name(self) -> str:  # pyright: ignore[reportIncompatibleMethodOverride]
+        """
+        Return the name of the workbook file.
+
+        Returns:
+            The name of the workbook file as a string.
+        """
+        return self.filepath.name
+
+    @cached_property
     @override
     def vba_summary(self) -> VbaSummary | None:  # pyright: ignore[reportIncompatibleMethodOverride]
         """Return a summary of any detected VBA macros and analysis results.
@@ -135,13 +145,14 @@ class _ExcelWorkbook(WorkbookProtocol):
         sheet = self._workbook[sheet_name]
         return [[cell.value for cell in row] for row in sheet[range_str]]
 
+    @override
     def agent_summary(self) -> str:
         """Generate a summary of the workbook for agent use.
 
         Returns:
             A string summary of the workbook, including sheets, tables, and VBA macros.
         """
-        summary = f"Workbook: {self.filepath.name} ({self.filepath!r})\n"
+        summary = f"Workbook: {self.file_name!r} ({self.filepath!r})\n"
         for sheet in self.sheets:
             summary += f"  Sheet: {sheet.name!r}, Range: {sheet.range!r}\n"
             for table in sheet.tables:

@@ -17,11 +17,16 @@ jobs:
     steps:
       - uses: actions/configure-pages@v6
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
-          python-version: 3.x
-      - run: pip install zensical
-      - run: zensical build --clean
+          python-version: 3.13
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.4"
+          enable-cache: true
+      - name: build docs
+        run: uvx nox -s build_docs --error-on-missing-interpreters
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site

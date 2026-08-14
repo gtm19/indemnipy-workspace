@@ -109,6 +109,16 @@ class WorkbookProtocol(Protocol):
     filepath: Path
 
     @property
+    def file_name(self) -> str:
+        """
+        Return the name of the workbook file.
+
+        Returns:
+            The name of the workbook file as a string.
+        """
+        ...
+
+    @property
     def vba_summary(self) -> VbaSummary | None:
         """
         Return a summary of any detected VBA macros and analysis results.
