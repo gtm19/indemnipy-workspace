@@ -1,7 +1,7 @@
 [project]
 name = "indemnipy-ai"
-version = "0.1.0"
-description = "pydantic-ai capabilities for working with Excel files"
+version = "0.1.1"
+description = "pydantic-ai capabilities for working with spreadsheets"
 readme = "README.md"
 authors = [
     { name = "Gareth Maddock", email = "gtmaddock@gmail.com" }
