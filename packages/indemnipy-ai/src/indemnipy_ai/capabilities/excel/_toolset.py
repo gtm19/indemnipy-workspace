@@ -84,7 +84,7 @@ class _ExcelToolset:
             file_path (Path): The path to the Excel file.
 
         Returns:
-            str: The key under which the workbook was stored.
+            The key under which the workbook was stored.
         """
         base = file_path.name
         existing = [
@@ -104,7 +104,7 @@ class _ExcelToolset:
         List information about all workbooks.
 
         Returns:
-            str: A string representation of the workbooks and their sheets / tables
+            A string representation of the workbooks and their sheets / tables
         """
         summaries = [wb.agent_summary() for wb in self.runtime_state.workbooks.values()]
         return "\n\n".join(summaries) if summaries else "No workbooks loaded."
@@ -412,7 +412,7 @@ class _ExcelToolset:
         with preview_derived_table().
 
         Returns:
-            _TableSchema: A dictionary mapping table names to their column names and types.
+            A dictionary mapping table names to their column names and types.
         """
         return {
             name: {

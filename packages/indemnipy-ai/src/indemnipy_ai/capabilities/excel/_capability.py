@@ -109,7 +109,7 @@ class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
         Get the toolset for Excel capabilities.
 
         Returns:
-            FunctionToolset: The toolset containing Excel-related tools.
+            The toolset containing Excel-related tools.
         """
         excel_toolset_builder = _ExcelToolset(
             id=self.id or "indemnipy-ai.capabilities.excel",
