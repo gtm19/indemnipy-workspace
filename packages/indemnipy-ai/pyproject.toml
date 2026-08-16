@@ -31,6 +31,10 @@ classifiers = [
   "Intended Audience :: Developers",
 ]
 
+[project.urls]
+Documentation = "https://docs.indemnipy.com/indemnipy-ai/"
+Repository = "https://github.com/gtm19/indemnipy-workspace/tree/main/packages/indemnipy-ai/"
+
 
 [build-system]
 requires = ["uv_build>=0.12.3,<0.13.0"]
