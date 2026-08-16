@@ -1,6 +1,6 @@
 [project]
 name = "indemnipy-ai"
-version = "0.1.1"
+version = "0.1.2"
 description = "pydantic-ai capabilities for working with spreadsheets"
 readme = "README.md"
 authors = [
@@ -32,7 +32,7 @@ classifiers = [
 ]
 
 [project.urls]
-Documentation = "https://docs.indemnipy.com/indemnipy-ai/"
+Documentation = "https://docs.indemnipy.com/indemnipy-ai/overview"
 Repository = "https://github.com/gtm19/indemnipy-workspace/tree/main/packages/indemnipy-ai/"
 
 
