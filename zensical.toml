@@ -8,7 +8,7 @@ site_author = "Gareth Maddock"
 
 repo_url = "https://github.com/gtm19/indemnipy-workspace"
 repo_name = "gtm19/indemnipy-workspace"
-# edit_uri = "edit/main/docs/"
+edit_uri = "edit/main/docs/"
 
 nav = [
   { "indemnipy" = "index.md" },
