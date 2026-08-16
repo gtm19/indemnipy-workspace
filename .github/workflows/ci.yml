@@ -31,7 +31,7 @@ jobs:
       - run: uv sync --all-packages --locked
       - name: Run basedpyright
         id: pyright
-        run: uv run --with basedpyright basedpyright --level error
+        run: uv run --group test --with basedpyright basedpyright --level error
 
   test:
     name: Tests
