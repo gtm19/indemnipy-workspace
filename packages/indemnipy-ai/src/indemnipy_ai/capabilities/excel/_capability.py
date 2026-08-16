@@ -23,7 +23,7 @@ def _load_capability_instructions() -> str:
 
 @runtime_checkable
 class ExcelDeps(Protocol):
-    """Dependency protocol for Excel capabilities.
+    """Dependency protocol for spreadsheet capabilities.
 
     Any object that has an ``excel_runtime_state`` attribute of type
     [ExcelRuntimeState][indemnipy_ai.capabilities.excel.ExcelRuntimeState]
@@ -42,10 +42,10 @@ class ExcelDeps(Protocol):
 
 @dataclass
 class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
-    """Gives an agent the ability to read and analyse Excel files.
+    """Gives an agent the ability to read and analyse spreadsheets.
 
     Attach this capability to a pydantic-ai ``Agent`` to register a set of
-    Excel-reading tools and built-in workflow instructions.  The agent can then
+    spreadsheet-reading tools and built-in workflow instructions.  The agent can then
     load local ``.xlsx`` and ``.xlsm`` files, inspect worksheets and named
     tables, run DuckDB SQL queries, and store derived results that persist
     across turns.
@@ -66,7 +66,7 @@ class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
     """
 
     id: str | None = "indemnipy-ai.capabilities.excel"
-    description: str | None = "Provides tools for reading and analysing Excel files."
+    description: str | None = "Provides tools for reading and analysing spreadsheets."
 
     runtime_state: "ExcelRuntimeState" = field(default_factory=ExcelRuntimeState)
     date_parsing_options: DateParsingOptions = field(
@@ -106,10 +106,10 @@ class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
     @override
     def get_toolset(self) -> FunctionToolset:
         """
-        Get the toolset for Excel capabilities.
+        Get the toolset for spreadsheet capabilities.
 
         Returns:
-            FunctionToolset: The toolset containing Excel-related tools.
+            The toolset containing spreadsheet-related tools.
         """
         excel_toolset_builder = _ExcelToolset(
             id=self.id or "indemnipy-ai.capabilities.excel",
@@ -117,8 +117,8 @@ class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
             date_parsing_options=self.date_parsing_options,
         )
 
-        if self.runtime_state.excel_files:
-            for file_path in self.runtime_state.excel_files:
+        if self.runtime_state.spreadsheets:
+            for file_path in self.runtime_state.spreadsheets:
                 _ = excel_toolset_builder.load_workbook(file_path)
         return excel_toolset_builder.toolset()
 

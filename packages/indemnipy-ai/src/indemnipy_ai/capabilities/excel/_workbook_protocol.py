@@ -34,7 +34,7 @@ class VbaSummary:
 
     @classmethod
     def from_file(cls, filepath: Path, parser: _VbaParser) -> "VbaSummary":
-        """Build a summary from an Excel workbook or OLE document.
+        """Build a summary from a workbook or OLE document.
 
         Args:
             filepath: Path to the workbook to inspect.
@@ -80,9 +80,9 @@ class VbaSummary:
 
 @dataclass
 class WorkbookTable:
-    """A single table extracted from an Excel workbook, or produced by a query.
+    """A single table extracted from a workbook, or produced by a query.
 
-    Workbook tables come from named Excel tables or ranges registered with
+    Workbook tables come from named tables or ranges registered with
     ``add_table_from_range``.  Derived tables are created by
     ``query_store_and_preview`` and live in
     [`ExcelRuntimeState.derived_tables`][indemnipy_ai.capabilities.excel.ExcelRuntimeState.derived_tables].
@@ -105,7 +105,7 @@ class WorkbookSheet:
     """Metadata for a single worksheet in a loaded workbook.
 
     Returned via :attr:`WorkbookProtocol.sheets`.  The ``tables`` list
-    contains only *named* Excel tables.  Sheets with tabular data that has not
+    contains only *named* tables.  Sheets with tabular data that has not
     been formally defined as a table will still appear here but with an empty
     ``tables`` list; use ``get_range`` to read their raw contents.
     """
@@ -132,7 +132,7 @@ class WorkbookSheet:
 
 
 class WorkbookProtocol(Protocol):
-    """Structural protocol for a loaded Excel workbook.
+    """Structural protocol for a loaded workbook.
 
     Instances are created internally and stored in
     :attr:`ExcelRuntimeState.workbooks <indemnipy_ai.capabilities.excel.ExcelRuntimeState.workbooks>`.
@@ -176,7 +176,7 @@ class WorkbookProtocol(Protocol):
 
         Args:
             sheet_name: Name of the sheet to read from.
-            range_str: Excel-style range string, e.g. ``"A1:C3"``.
+            range_str: Range string, e.g. ``"A1:C3"``.
 
         Returns:
             A list of rows, each row being a list of cell values.
@@ -190,7 +190,7 @@ class WorkbookProtocol(Protocol):
 
         Args:
             sheet_name: Name of the sheet containing the range.
-            range_str: Excel-style range string, e.g. ``"A1:C3"``.
+            range_str: Range string, e.g. ``"A1:C3"``.
             table_name: Name to assign to the new table.  Must be unique within
                 the sheet.
         """

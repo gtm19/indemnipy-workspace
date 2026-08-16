@@ -78,13 +78,13 @@ class _ExcelToolset:
 
     def load_workbook(self, file_path: Path) -> str:
         """
-        Load an Excel workbook and add it to the capability's workbooks list.
+        Load a workbook and add it to the capability's workbooks list.
 
         Args:
-            file_path (Path): The path to the Excel file.
+            file_path (Path): The path to the spreadsheet file.
 
         Returns:
-            str: The key under which the workbook was stored.
+            The key under which the workbook was stored.
         """
         base = file_path.name
         existing = [
@@ -104,7 +104,7 @@ class _ExcelToolset:
         List information about all workbooks.
 
         Returns:
-            str: A string representation of the workbooks and their sheets / tables
+            A string representation of the workbooks and their sheets / tables
         """
         summaries = [wb.agent_summary() for wb in self.runtime_state.workbooks.values()]
         return "\n\n".join(summaries) if summaries else "No workbooks loaded."
@@ -113,7 +113,7 @@ class _ExcelToolset:
         self, workbook_name: str | None = None
     ) -> dict[str, list[_SheetInfo]] | None:
         """
-        List the worksheets in a specific loaded Excel workbook, or all workbooks if no name is provided.
+        List the worksheets in a specific loaded workbook, or all workbooks if no name is provided.
 
         Returns sheet metadata and the names of any tables defined in each sheet.
         Use list_tables_and_metadata() to get full column-level detail for those tables.
@@ -155,12 +155,12 @@ class _ExcelToolset:
         self, workbook_name: str, sheet_name: str, range_str: str = "A1:J100"
     ) -> list[list[Any]] | None:
         """
-        Get the values in a specified range from a given sheet in a loaded Excel workbook.
+        Get the values in a specified range from a given sheet in a loaded workbook.
 
         Args:
             workbook_name (str): The name of the workbook.
             sheet_name (str): The name of the sheet to retrieve the range from.
-            range_str (str): The range string in Excel format (e.g., "A1:C10"). Default is "A1:J100".
+            range_str (str): The range string (e.g., "A1:C10"). Default is "A1:J100".
 
         Returns:
             list[list[Any]] | None: A list of lists containing the values in the specified range,
@@ -181,7 +181,7 @@ class _ExcelToolset:
         self, workbook_name: str | None = None
     ) -> _WorkbookSchema:
         """
-        List the tables in loaded Excel workbooks, organised by workbook and sheet, along with their column names and types.
+        List the tables in loaded workbooks, organised by workbook and sheet, along with their column names and types.
 
         Only sheets that contain at least one table are included.
 
@@ -229,7 +229,7 @@ class _ExcelToolset:
         offset: int = 0,
     ) -> str | None:
         """
-        Preview the first few rows of a specific table in a loaded Excel workbook.
+        Preview the first few rows of a specific table in a loaded workbook.
 
         Args:
             workbook_name (str): The name of the workbook.
@@ -258,7 +258,7 @@ class _ExcelToolset:
         Args:
             workbook_name: The name of the workbook.
             sheet_name: The name of the sheet containing the range.
-            range_str: The Excel-style range string for the new table (e.g., "A1:C3").
+            range_str: The range string for the new table (e.g., "A1:C3").
             table_name: The name to assign to the new table. Must be unique within the sheet.
 
         Returns:
@@ -321,7 +321,7 @@ class _ExcelToolset:
 
     def get_workbook_vba(self, workbook_name: str) -> str | None:
         """
-        Get the VBA summary of a loaded Excel workbook by name.
+        Get the VBA summary of a loaded workbook by name.
 
         Args:
             workbook_name (str): The name of the workbook.
@@ -412,7 +412,7 @@ class _ExcelToolset:
         with preview_derived_table().
 
         Returns:
-            _TableSchema: A dictionary mapping table names to their column names and types.
+            A dictionary mapping table names to their column names and types.
         """
         return {
             name: {

@@ -30,17 +30,17 @@ agent = Agent(
     output_type=str,
 )
 
-result = agent.run_sync("What Excel files do you have access to?")
+result = agent.run_sync("What spreadsheets do you have access to?")
 print(result.output)
 ```
 
-Without any Excel files pre-loaded, the agent will report that none are available. You can ask it to load a file by path, or you can pre-load files yourself — see below.
+Without any spreadsheets pre-loaded, the agent will report that none are available. You can ask it to load a file by path, or you can pre-load files yourself — see below.
 
 ---
 
-## Pre-loading Excel files
+## Pre-loading Spreadsheets
 
-Pass local file paths to `ExcelRuntimeState` before the run. The capability will load the workbooks immediately and the agent will have access to them from the first message.
+Pass local file paths to `ExcelRuntimeState` before the run. The capability will load the spreadsheets immediately and the agent will have access to them from the first message.
 
 ```python
 from dataclasses import dataclass, field
@@ -55,7 +55,7 @@ class Deps:
     excel_runtime_state: ExcelRuntimeState = field(default_factory=ExcelRuntimeState)
 
 
-EXCEL_FILES = [
+SPREADSHEETS = [
     Path("data/STP_Submission_2026.xlsx"),
 ]
 
@@ -68,7 +68,7 @@ agent = Agent(
 
 
 def main():
-    deps = Deps(excel_runtime_state=ExcelRuntimeState(excel_files=EXCEL_FILES))
+    deps = Deps(excel_runtime_state=ExcelRuntimeState(spreadsheets=SPREADSHEETS))
     result = agent.run_sync(
         "Extract the claims data by year — total count and total value.",
         deps=deps,
@@ -81,9 +81,9 @@ if __name__ == "__main__":
 ```
 
 !!! note "Files must be local"
-    Excel files must exist on the local filesystem. Network paths and cloud storage URLs are not supported.
+    Spreadsheets must exist on the local filesystem. Network paths and cloud storage URLs are not supported.
 
-You can also omit `excel_files` entirely and let the agent load workbooks on demand — it will call `load_workbook` itself when you refer to a file by path in your message.
+You can also omit `spreadsheets` entirely and let the agent load workbooks on demand — it will call `load_workbook` itself when you refer to a file by path in your message.
 
 ---
 
@@ -105,7 +105,7 @@ class Deps:
 After `agent.run_sync(...)` returns, you can inspect everything the agent created:
 
 ```python
-deps = Deps(excel_runtime_state=ExcelRuntimeState(excel_files=EXCEL_FILES))
+deps = Deps(excel_runtime_state=ExcelRuntimeState(spreadsheets=SPREADSHEETS))
 result = agent.run_sync("Summarise claims by year.", deps=deps)
 
 # Derived tables created during the run
@@ -132,7 +132,7 @@ If you do not pass `deps`, the capability creates a fresh `ExcelRuntimeState` in
 Pass the same `deps` instance to each `agent.run()` call to preserve workbooks and derived tables across turns:
 
 ```python
-deps = Deps(excel_runtime_state=ExcelRuntimeState(excel_files=EXCEL_FILES))
+deps = Deps(excel_runtime_state=ExcelRuntimeState(spreadsheets=SPREADSHEETS))
 
 result1 = agent.run_sync("Load the workbook and list the available tables.", deps=deps)
 print(result1.output)
@@ -151,7 +151,7 @@ The agent will remember which workbooks are loaded and which derived tables exis
 
 ```python
 def cli():
-    deps = Deps(excel_runtime_state=ExcelRuntimeState(excel_files=EXCEL_FILES))
+    deps = Deps(excel_runtime_state=ExcelRuntimeState(spreadsheets=SPREADSHEETS))
     agent.to_cli_sync(deps=deps)
 
 

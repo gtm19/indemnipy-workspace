@@ -20,7 +20,7 @@ def install_all_packages(session):
 def tests(session):
     """Run the test suite."""
     install_all_packages(session)
-    session.install("--group", "dev")
+    session.install("--group", "test")
     session.run("pytest")
 
 

@@ -1,7 +1,7 @@
 [project]
 name = "indemnipy-ai"
-version = "0.1.0"
-description = "pydantic-ai capabilities for working with Excel files"
+version = "0.1.1"
+description = "pydantic-ai capabilities for working with spreadsheets"
 readme = "README.md"
 authors = [
     { name = "Gareth Maddock", email = "gtmaddock@gmail.com" }
@@ -19,6 +19,22 @@ dependencies = [
 ]
 license = "MIT"
 license-files = ["LICEN[CS]E"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Intended Audience :: Developers",
+]
+
+[project.urls]
+Documentation = "https://docs.indemnipy.com/indemnipy-ai/"
+Repository = "https://github.com/gtm19/indemnipy-workspace/tree/main/packages/indemnipy-ai/"
+
 
 [build-system]
 requires = ["uv_build>=0.12.3,<0.13.0"]

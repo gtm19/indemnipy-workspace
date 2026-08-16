@@ -8,7 +8,7 @@ site_author = "Gareth Maddock"
 
 repo_url = "https://github.com/gtm19/indemnipy-workspace"
 repo_name = "gtm19/indemnipy-workspace"
-# edit_uri = "edit/main/docs/"
+edit_uri = "edit/main/docs/"
 
 nav = [
   { "indemnipy" = "index.md" },
@@ -16,6 +16,7 @@ nav = [
     { "Overview" = "indemnipy-ai/overview.md" },
     { "Getting Started" = "indemnipy-ai/getting-started.md" },
     { "API Reference" = "indemnipy-ai/api-reference.md" },
+    { "Changelog" = "indemnipy-ai/changelog.md" },
   ] },
 ]
 
@@ -109,7 +110,7 @@ pymdownx.keys = {}
 pymdownx.magiclink = {}
 pymdownx.mark = {}
 pymdownx.smartsymbols = {}
-# pymdownx.snippets = { base_path = "includes" }
+pymdownx.snippets = { base_path = ".", check_paths = true }
 pymdownx.superfences = { custom_fences = [
   { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
 ] }
