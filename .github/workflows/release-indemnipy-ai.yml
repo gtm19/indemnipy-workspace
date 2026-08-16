@@ -27,14 +27,17 @@ jobs:
         run: uv build --package indemnipy-ai
       - name: Publish to PyPI
         run: uv publish
-      # - name: Create GitHub release
-      #   uses: softprops/action-gh-release@v2
-      #   with:
-      #     tag_name: indemnipy-ai-v${{ steps.version.outputs.version }}
-      #     name: indemnipy-ai v${{ steps.version.outputs.version }}
-      #     files: dist/*
-      #     generate_release_notes: true
-      #     fail_on_unmatched_files: true
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: indemnipy-ai-v${{ steps.version.outputs.version }}
+          name: indemnipy-ai v${{ steps.version.outputs.version }}
+          body_path: packages/indemnipy-ai/CHANGELOG.md
+          files: dist/indemnipy_ai*
+          draft: true
+          prerelease: true
+          generate_release_notes: true
+          fail_on_unmatched_files: true
 
   docs:
     needs: release
