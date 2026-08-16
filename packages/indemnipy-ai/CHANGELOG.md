@@ -1,3 +1,10 @@
+# UNRELEASED
+
+## Changes
+
+- Re-added GitHub release workflow to CI (in draft)
+- Updated pre-commit hooks to latest versions
+
 # v0.1.2 (2026-08-16)
 
 ## Changes
