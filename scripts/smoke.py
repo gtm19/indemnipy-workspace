@@ -18,5 +18,5 @@ agent = Agent(
     output_type=str,
     deps_type=Deps,
 )
-deps = Deps(excel_runtime_state=ExcelRuntimeState(excel_files=[]))
+deps = Deps(excel_runtime_state=ExcelRuntimeState(spreadsheets=[]))
 print("OK")

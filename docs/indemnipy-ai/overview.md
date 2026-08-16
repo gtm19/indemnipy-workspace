@@ -12,13 +12,13 @@ Capabilities are reusable bundles of tools and system instructions that you atta
 
 ## ExcelCapability
 
-`ExcelCapability` gives an agent the ability to work with Excel files — `.xlsx` and `.xlsm` — using a structured, step-by-step workflow.
+`ExcelCapability` gives an agent the ability to work with spreadsheets — `.xlsx` and `.xlsm` — using a structured, step-by-step workflow.
 
 When this capability is active, the agent can:
 
 - **Load workbooks** — by file path (files must be local)
 - **Inspect worksheets** — browse sheet names, cell ranges, and dimension metadata
-- **Discover tables** — named Excel tables are picked up automatically; unformatted ranges can be promoted to named tables on demand
+- **Discover tables** — named tables are picked up automatically; unformatted ranges can be promoted to named tables on demand
 - **Preview and query** — read and aggregate table data using DuckDB SQL, without modifying the source file
 - **Derive and store results** — store query results as named derived tables that persist across turns in a multi-turn conversation
 
@@ -28,7 +28,7 @@ The capability registers the following tools on the agent:
 
 | Tool | Description |
 |------|-------------|
-| `load_workbook` | Load a local Excel file into the session |
+| `load_workbook` | Load a local spreadsheet into the session |
 | `list_workbooks` | Summarise all loaded workbooks |
 | `list_worksheets` | List sheet metadata for a workbook |
 | `list_tables_and_metadata` | Return table names and column schemas |

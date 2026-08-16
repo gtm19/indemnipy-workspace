@@ -1,9 +1,9 @@
-## Working with Excel files
+## Working with Spreadsheets
 
-This Capability makes it easy for you to work with Excel files.
+This Capability makes it easy for you to work with spreadsheets.
 
 Specifically, you will be able to:
-- Load Excel files and inspect their contents
+- Load spreadsheets and inspect their contents
 - Query tables (which are automatically added when there are named tables already in the workbook) using SQL (duckdb) syntax
 - Inspect the content of worksheets
 - Add new tables to your internal storage based on a workbook, worksheet, range and name

@@ -76,7 +76,7 @@ _COERCE_TYPES = {
 
 @dataclass(frozen=True)
 class DateParsingOptions:
-    """Options for parsing dates in Excel data.
+    """Options for parsing dates in spreadsheet data.
 
     Attributes:
         parse_dates: When ``True``, strings that can be unambiguously parsed as
@@ -177,7 +177,7 @@ def _dataframe_from_range(
 def _openpyxl_table_parser(
     workbook: Workbook, date_parsing_options: DateParsingOptions | None = None
 ) -> dict[str, _ParsedWorkbookTable]:
-    """Parse an Excel workbook and extract tables as Polars DataFrames.
+    """Parse a workbook and extract tables as Polars DataFrames.
 
     Args:
         workbook: An openpyxl Workbook instance.

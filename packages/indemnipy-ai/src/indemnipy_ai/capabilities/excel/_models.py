@@ -23,7 +23,7 @@ from indemnipy_ai.capabilities.excel._workbook_protocol import (
 
 @dataclass
 class _ExcelWorkbook(WorkbookProtocol):
-    """Represents an Excel workbook file.
+    """Represents a workbook file.
 
     Attributes:
         filepath: Path to the workbook file.
@@ -76,7 +76,7 @@ class _ExcelWorkbook(WorkbookProtocol):
 
         Args:
             sheet_name: The name of the sheet containing the new table.
-            range_str: The Excel-style range string for the new table (e.g., "A1:C3").
+            range_str: The range string for the new table (e.g., "A1:C3").
             table_name: The name of the new table.
         """
         target_sheet = next(sheet for sheet in self.sheets if sheet.name == sheet_name)
@@ -137,7 +137,7 @@ class _ExcelWorkbook(WorkbookProtocol):
 
         Args:
             sheet_name: The name of the sheet to retrieve the range from.
-            range_str: The Excel-style range string (e.g., "A1:C3").
+            range_str: The range string (e.g., "A1:C3").
 
         Returns:
             A list of lists containing the values in the specified range.
