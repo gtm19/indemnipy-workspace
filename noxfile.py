@@ -48,3 +48,19 @@ def build_docs(session):
     """Build the documentation."""
     session.install("--group", "docs")
     session.run("zensical", "build", "--clean")
+
+
+@nox.session(default=False)
+def lint(session):
+    """Run linting and formatting checks."""
+    session.install("--group", "lint")
+    session.run("ruff", "format", ".")
+    session.run("ruff", "check", "--fix", ".")
+
+
+@nox.session(default=False)
+def typecheck(session):
+    """Run type checking."""
+    session.install("--group", "typecheck", "--group", "test")
+    src_dirs = [str(p) for p in Path("packages").glob("*/src")]
+    session.run("basedpyright", *src_dirs, "--level", "error")
