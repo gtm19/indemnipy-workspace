@@ -17,10 +17,7 @@ jobs:
       - uses: ./.github/actions/setup-uv
       - name: Check formatting
         id: fmt
-        run: uvx ruff format --check .
-      - name: Check linting
-        id: lint
-        run: uvx ruff check .
+        run: uvx nox -s lint
 
   typecheck:
     name: Type Check
@@ -31,7 +28,7 @@ jobs:
       - run: uv sync --all-packages --locked
       - name: Run basedpyright
         id: pyright
-        run: uv run --group test --with basedpyright basedpyright --level error
+        run: uvx nox -s typecheck
 
   test:
     name: Tests

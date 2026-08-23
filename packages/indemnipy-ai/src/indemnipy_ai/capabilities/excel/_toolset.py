@@ -2,9 +2,10 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, NamedTuple, TypeAlias, TypedDict
+from typing import Any, NamedTuple, TypeAlias
 
 import duckdb
+from pydantic import BaseModel
 from pydantic_ai import ModelRetry, Tool
 from pydantic_ai.toolsets import FunctionToolset
 
@@ -26,7 +27,7 @@ _SheetSchema: TypeAlias = dict[str, _TableSchema]
 _WorkbookSchema: TypeAlias = dict[str, _SheetSchema]
 
 
-class _SheetInfo(TypedDict):
+class _SheetInfo(BaseModel):
     name: str
     range: str
     freeze_panes: str | None
@@ -128,26 +129,26 @@ class _ExcelToolset:
             min_row, max_column, max_row, state, and tables (list of table names only).
         """
 
-        def _sheet_to_dict(sheet: WorkbookSheet) -> _SheetInfo:
-            return {
-                "name": sheet.name,
-                "range": sheet.range,
-                "freeze_panes": sheet.freeze_panes,
-                "min_column": sheet.min_column,
-                "min_row": sheet.min_row,
-                "max_column": sheet.max_column,
-                "max_row": sheet.max_row,
-                "state": sheet.state,
-                "tables": [t.name for t in sheet.tables],
-            }
+        def _sheet_to_info(sheet: WorkbookSheet) -> _SheetInfo:
+            return _SheetInfo(
+                name=sheet.name,
+                range=sheet.range,
+                freeze_panes=sheet.freeze_panes,
+                min_column=sheet.min_column,
+                min_row=sheet.min_row,
+                max_column=sheet.max_column,
+                max_row=sheet.max_row,
+                state=sheet.state,
+                tables=[t.name for t in sheet.tables],
+            )
 
         if workbook_name:
             workbook = self.runtime_state.workbooks.get(workbook_name)
             if workbook:
-                return {workbook_name: [_sheet_to_dict(s) for s in workbook.sheets]}
+                return {workbook_name: [_sheet_to_info(s) for s in workbook.sheets]}
             return None
         return {
-            name: [_sheet_to_dict(s) for s in wb.sheets]
+            name: [_sheet_to_info(s) for s in wb.sheets]
             for name, wb in self.runtime_state.workbooks.items()
         }
 

@@ -30,12 +30,20 @@ docs = [
     "zensical==0.0.54",
     "mkdocstrings[python]>=0.27",
 ]
+lint = [
+    "ruff>=0.16.4",
+]
+typecheck = [
+    "basedpyright>=1.39.10",
+]
+
+[tool.inline-snapshot]
+format-command = "ruff format {filename}"
 
 [tool.ruff.lint]
 ignore = ["PYI046"]
 
-
-
 [tool.pyright]
 pythonVersion = "3.10"
+reportPrivateUsage = false
 failOnWarnings = false

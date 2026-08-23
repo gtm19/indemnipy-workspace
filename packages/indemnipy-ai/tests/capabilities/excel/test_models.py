@@ -6,6 +6,10 @@ import pytest
 from indemnipy_ai.capabilities.excel._functions import (
     _oletools_vba_parser as oletools_vba_parser,
 )
+from indemnipy_ai.capabilities.excel._parser_contract import (
+    _VbaAnalysisResult,
+    _VbaMacro,
+)
 from indemnipy_ai.capabilities.excel._workbook_protocol import VbaSummary
 from inline_snapshot import snapshot
 
@@ -292,3 +296,75 @@ def test_vba_extraction(file_path: Path, expected: dict[str, Any]):
     d = asdict(summary)
     assert d.pop("filepath") == file_path
     assert d == expected
+
+
+# ---------------------------------------------------------------------------
+# VbaSummary.to_md
+# ---------------------------------------------------------------------------
+
+
+def test_vba_summary_to_md_empty():
+    summary = VbaSummary(filepath=Path("test.xlsx"), analysis_results=[], macros=[])
+    assert summary.to_md() == snapshot("# VBA Macros in test.xlsx\n")
+
+
+def test_vba_summary_to_md_with_analysis_results_and_macros():
+    summary = VbaSummary(
+        filepath=Path("workbook.xlsm"),
+        analysis_results=[
+            _VbaAnalysisResult(
+                kw_type="Suspicious",
+                keyword="Shell",
+                description="May run an external process",
+            )
+        ],
+        macros=[
+            _VbaMacro(
+                filename="xl/vbaProject.bin",
+                stream_path="VBA/Module1",
+                vba_filename="Module1.bas",
+                vba_code='Sub Hello()\n    MsgBox "Hello"\nEnd Sub\n',
+            )
+        ],
+    )
+    assert summary.to_md() == snapshot(
+        """\
+# VBA Macros in workbook.xlsm
+
+## Analysis Results
+There are 1 observations.
+1. Type: Suspicious, Keyword: Shell, Description: May run an external process
+
+## Macro 1
+Filename: xl/vbaProject.bin
+Stream Path: VBA/Module1
+VBA Filename: Module1.bas
+
+### VBA Code:
+```vba
+Sub Hello()
+    MsgBox "Hello"
+End Sub
+
+```
+"""
+    )
+
+
+def test_vba_summary_to_md_multiple_analysis_results():
+    summary = VbaSummary(
+        filepath=Path("x.xlsm"),
+        analysis_results=[
+            _VbaAnalysisResult(
+                kw_type="Suspicious", keyword="Write", description="May write to file"
+            ),
+            _VbaAnalysisResult(
+                kw_type="AutoExec", keyword="Auto_Open", description="Runs on open"
+            ),
+        ],
+        macros=[],
+    )
+    result = summary.to_md()
+    assert "There are 2 observations." in result
+    assert "1. Type: Suspicious" in result
+    assert "2. Type: AutoExec" in result
