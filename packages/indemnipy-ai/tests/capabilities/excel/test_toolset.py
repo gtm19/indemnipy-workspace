@@ -75,6 +75,7 @@ def test_list_workbooks_after_load_contains_filename():
 def test_list_worksheets_with_workbook_name():
     ts = _make_toolset(XLSX)
     result = ts.list_worksheets(XLSX_KEY)
+    assert result is not None
     assert {k: [s.model_dump() for s in v] for k, v in result.items()} == snapshot(
         {
             "Vantris_Pharmaceuticals_STP_Submission_2026.xlsx": [
