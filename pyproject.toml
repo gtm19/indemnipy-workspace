@@ -46,3 +46,4 @@ ignore = ["PYI046"]
 [tool.pyright]
 pythonVersion = "3.10"
 reportPrivateUsage = false
+failOnWarnings = false
