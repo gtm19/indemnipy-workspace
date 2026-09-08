@@ -57,7 +57,7 @@ First, a little setup:
 ## Use Case 1: Submission Key Details
 
 If you just want to extract key information with which to populate a submission
-dashboard, or even to feed preliminary information into a pricing, the following
+dashboard, or even to feed preliminary information into a pricing model, the following
 is a good starting point.
 
 ### Dependencies and Model Definition
