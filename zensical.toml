@@ -15,6 +15,7 @@ nav = [
   { "indemnipy-ai" = [
     { "Overview" = "indemnipy-ai/overview.md" },
     { "Getting Started" = "indemnipy-ai/getting-started.md" },
+    { "Use Cases" = "indemnipy-ai/use-cases.md" },
     { "API Reference" = "indemnipy-ai/api-reference.md" },
     { "Changelog" = "indemnipy-ai/changelog.md" },
   ] },
