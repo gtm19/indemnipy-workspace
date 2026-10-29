@@ -577,3 +577,72 @@ def test_preview_derived_table_respects_n_rows_and_offset():
     r2 = ts.preview_derived_table("uk_locs", n_rows=1, offset=1)
     assert r1 is not None and r2 is not None
     assert r1 != r2
+
+
+# ---------------------------------------------------------------------------
+# DuckDB security: no external file read or write
+# ---------------------------------------------------------------------------
+
+
+def test_query_table_cannot_read_arbitrary_csv(tmp_path):
+    csv_file = tmp_path / "secret.csv"
+    csv_file.write_text("a,b\n1,2\n3,4\n")
+    ts = _make_toolset(XLSX)
+    with pytest.raises(ModelRetry):
+        ts.query_table(
+            XLSX_KEY,
+            "Locations",
+            "tblLocations",
+            f"SELECT * FROM read_csv('{csv_file}')",
+        )
+
+
+def test_query_table_cannot_write_file_to_disk(tmp_path):
+    out_file = tmp_path / "output.csv"
+    ts = _make_toolset(XLSX)
+    with pytest.raises(ModelRetry):
+        ts.query_table(
+            XLSX_KEY,
+            "Locations",
+            "tblLocations",
+            f"COPY df TO '{out_file}'",
+        )
+    assert not out_file.exists()
+
+
+def test_query_store_and_preview_cannot_read_arbitrary_csv(tmp_path):
+    csv_file = tmp_path / "secret.csv"
+    csv_file.write_text("a,b\n1,2\n3,4\n")
+    ts = _make_toolset(XLSX)
+    with pytest.raises(ModelRetry):
+        ts.query_store_and_preview(
+            tables_used=[
+                _QueryTable(
+                    table="tblLocations",
+                    reference_name="loc",
+                    workbook=XLSX_KEY,
+                    sheet="Locations",
+                )
+            ],
+            query=f"SELECT * FROM read_csv('{csv_file}')",
+            table_name="injected",
+        )
+
+
+def test_query_store_and_preview_cannot_write_file_to_disk(tmp_path):
+    out_file = tmp_path / "output.csv"
+    ts = _make_toolset(XLSX)
+    with pytest.raises(ModelRetry):
+        ts.query_store_and_preview(
+            tables_used=[
+                _QueryTable(
+                    table="tblLocations",
+                    reference_name="loc",
+                    workbook=XLSX_KEY,
+                    sheet="Locations",
+                )
+            ],
+            query=f"COPY loc TO '{out_file}'",
+            table_name="out",
+        )
+    assert not out_file.exists()
