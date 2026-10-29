@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, NamedTuple, TypeAlias
 
@@ -65,6 +65,13 @@ class _ExcelToolset:
     id: str
     runtime_state: "ExcelRuntimeState"
     date_parsing_options: "DateParsingOptions"
+    duckdb_config: dict[str, str | bool | int | float | list[str]] | None = field(
+        default_factory=lambda: {
+            "enable_external_access": False,
+            "autoinstall_known_extensions": False,
+            "autoload_known_extensions": False,
+        }
+    )
 
     def _get_workbook_table(
         self, workbook_name: str, sheet_name: str, table_name: str
@@ -312,7 +319,7 @@ class _ExcelToolset:
             return None
 
         try:
-            with duckdb.connect() as con:
+            with duckdb.connect(config=self.duckdb_config) as con:
                 con.register("df", table.dataframe)
                 return _print_df(con.sql(query).pl(), hide_shape=True)
         except Exception as e:
@@ -381,7 +388,7 @@ class _ExcelToolset:
             dataframes[qt.reference_name] = table
 
         try:
-            with duckdb.connect() as con:
+            with duckdb.connect(config=self.duckdb_config) as con:
                 for alias, tbl in dataframes.items():
                     con.register(alias, tbl.dataframe)
                 results = con.sql(query).pl()
@@ -397,8 +404,6 @@ class _ExcelToolset:
                 row_count=len(results),
                 preview=_print_df(results.head(preview_rows), hide_shape=True),
             )
-        except ModelRetry:
-            raise
         except Exception as e:
             raise ModelRetry(
                 f"Error executing query on tables {[(qt.workbook, qt.sheet, qt.table) for qt in tables_used]}: {e}"
