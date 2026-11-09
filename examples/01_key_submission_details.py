@@ -123,7 +123,7 @@ class SubmissionSummary(BaseModel):
 agent = Agent(
     "gateway/openai:gpt-5.6-terra",
     capabilities=[
-        ExcelCapability(),  # (1)!
+        ExcelCapability(base_dir=Path(".")),  # (1)!
     ],
     output_type=SubmissionSummary,
     name="test-submission-agent",

@@ -48,6 +48,8 @@ class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
 
     Attributes:
         id: Capability identifier registered with the agent's toolset.
+        description: Human-readable description of the capability.
+        base_dir: Base directory used to locate spreadsheet files.
         runtime_state: Fallback state used when deps does not implement
             [`ExcelDeps`][indemnipy_ai.capabilities.excel.ExcelDeps].
         date_parsing_options: Controls how mixed-format or ambiguous date

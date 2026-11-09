@@ -90,12 +90,13 @@ the output type, which is the `SubmissionSummary` model we defined above.
 ```
 
 1.  :bar_chart: Here is where we drop our `ExcelCapability` into the agent, so it can
-    read / manipulate the spreadsheet.
+    read / manipulate the spreadsheet - including a `base_dir` for locating files.
 
 ### Running the Agent
 
-Finally, we can run the agent. We pass it the path to the spreadsheet, and it will
-return a structured output of the key submission details.
+Finally, we can run the agent. We don't need to manually pass the spreadsheet path here,
+since the agent will look in the `base_dir` specified in the `ExcelCapability` for the spreadsheet files
+(loading in any applicable spreadsheet files from that directory) and then proceeds to extract the key submission details.
 
 ```python
 --8<-- "examples/01_key_submission_details.py:main_run"

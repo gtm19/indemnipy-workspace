@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `ExcelCapability` now integrates with Pydantic AI's workspace system. Set `base_dir` to the directory containing your spreadsheets; the capability exposes a read-only workspace rooted there so the agent can browse for files.
+- New `list_available_workbooks` tool — lets the agent discover `.xlsx` and `.xlsm` files within the workspace without requiring the user to supply explicit paths.
+
+### Changed
+
+- `load_workbook` is now async and workspace-aware. It validates that the requested file is within the configured workspace root and rejects paths that escape it.
+- `list_workbooks` renamed to `list_loaded_workbooks` for clarity.
+- `list_worksheets` renamed to `list_worksheets_from_loaded_workbook` for clarity.
+
 ## [0.1.3] - 2026-10-28
 
 ### Added

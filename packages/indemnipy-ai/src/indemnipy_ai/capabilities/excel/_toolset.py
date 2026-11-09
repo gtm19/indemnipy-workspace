@@ -29,6 +29,7 @@ _SheetSchema: TypeAlias = dict[str, _TableSchema]
 _WorkbookSchema: TypeAlias = dict[str, _SheetSchema]
 
 _VALID_EXTENSIONS: set[str] = {".xlsx", ".xlsm"}
+_PAGE_SIZE: int = 10
 
 
 class _SheetInfo(BaseModel):
@@ -89,24 +90,32 @@ class _ExcelToolset:
         return next((t for t in sheet.tables if t.name == table_name), None)
 
     async def list_available_workbooks(
-        self, ctx: RunContext[ExcelDeps | Any]
+        self, ctx: RunContext[ExcelDeps | Any], glob_pattern: str = "*", offset: int = 0
     ) -> list[Path]:
         """
         List the paths of all available workbooks within the workspace.
 
+        Agents are encouraged to use the glob pattern to filter the workbooks they are interested in, since
+        at most 10 workbooks will be returned at a time.
+
+        Args:
+            ctx: The run context containing the workspace.
+            glob_pattern: The glob pattern to match workbook files. Defaults to "*".
+            offset: The number of initial matching workbooks to skip. Defaults to 0.
+
         Returns:
-            A list of paths to the available workbooks.
+            A list of paths to the available workbooks matching the glob pattern, after applying the offset.
         """
         ws = ctx.workspace
         ws_path = Path(await ws.working_dir())
         files = [
             p
-            for p in ws_path.rglob("*")
+            for p in ws_path.rglob(glob_pattern)
             if p.is_file()
             and p.suffix.lower() in _VALID_EXTENSIONS
             and not p.name.startswith("~$")
         ]
-        return files
+        return files[offset : offset + _PAGE_SIZE]
 
     def _load_workbook(self, file_path: Path) -> str:
         """
