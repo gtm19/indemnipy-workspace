@@ -16,7 +16,7 @@ def install_all_packages(session):
             session.install("-e", str(package_dir))
 
 
-@nox.session(python=["3.10", "3.12", "3.13"])
+@nox.session(python=["3.11", "3.14", "3.15"])
 def tests(session):
     """Run the test suite."""
     install_all_packages(session)
@@ -24,7 +24,7 @@ def tests(session):
     session.run("pytest")
 
 
-@nox.session(python=["3.10", "3.12", "3.13"], default=False)
+@nox.session(python=["3.11", "3.14", "3.15"], default=False)
 def smoke(session):
     """Build indemnipy-ai from source and verify the getting-started imports work."""
     with tempfile.TemporaryDirectory() as dist_dir:
