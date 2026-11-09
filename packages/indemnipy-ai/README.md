@@ -29,6 +29,7 @@ This package provides an `ExcelCapability` that allows you to build Pydantic AI 
 
 This capability adds the following abilities to your agent:
 
+- Browses a configured directory to discover available `.xlsx` and `.xlsm` files
 - Automatically discovers named tables and reads them in as Polars dataframes
 - Browses sheets for "table-like" data and can create new tables (again as Polars dataframes) from specific ranges
 - Reads arbitrary ranges of sheets for non-tabular data
@@ -40,13 +41,17 @@ Read more about Capabilities in the [Pydantic documentation](https://pydantic.de
 
 ### Basic Usage
 
+Pass `base_dir` to point the capability at the directory containing your spreadsheets. The agent can then browse for available files and load them without you supplying explicit paths.
+
 ```python
+from pathlib import Path
+
 from indemnipy_ai.capabilities.excel import ExcelCapability
 from pydantic_ai import Agent
 
 agent = Agent(
     "openai:gpt-4o",
-    capabilities=[ExcelCapability()],
+    capabilities=[ExcelCapability(base_dir=Path("./data"))],
     output_type=str,
 )
 

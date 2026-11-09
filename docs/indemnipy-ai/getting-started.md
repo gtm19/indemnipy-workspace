@@ -18,15 +18,17 @@ uv add indemnipy-ai
 
 ## Basic usage
 
-The minimal setup is an `Agent` with `ExcelCapability` attached. No other configuration is required.
+Pass `base_dir` to point the capability at the directory containing your spreadsheets. The agent can then browse for available files and load them without you supplying explicit paths.
 
 ```python
+from pathlib import Path
+
 from indemnipy_ai.capabilities.excel import ExcelCapability
 from pydantic_ai import Agent
 
 agent = Agent(
     "openai:gpt-4o",
-    capabilities=[ExcelCapability()],
+    capabilities=[ExcelCapability(base_dir=Path("./data"))],
     output_type=str,
 )
 
@@ -34,7 +36,7 @@ result = agent.run_sync("What spreadsheets do you have access to?")
 print(result.output)
 ```
 
-Without any spreadsheets pre-loaded, the agent will report that none are available. You can ask it to load a file by path, or you can pre-load files yourself — see below.
+The agent will call `list_available_workbooks` to discover files under `base_dir`, then load whichever are relevant to the task. You can also pre-load files yourself — see below.
 
 ---
 
@@ -80,10 +82,10 @@ if __name__ == "__main__":
     main()
 ```
 
-!!! note "Files must be local"
-    Spreadsheets must exist on the local filesystem. Network paths and cloud storage URLs are not supported.
+!!! note "Files must be within `base_dir`"
+    Spreadsheets must exist on the local filesystem within the directory configured as `base_dir`. Paths that escape the workspace root are rejected. Network paths and cloud storage URLs are not supported.
 
-You can also omit `spreadsheets` entirely and let the agent load workbooks on demand — it will call `load_workbook` itself when you refer to a file by path in your message.
+You can also omit `spreadsheets` entirely and let the agent discover and load workbooks on demand via `list_available_workbooks`.
 
 ---
 

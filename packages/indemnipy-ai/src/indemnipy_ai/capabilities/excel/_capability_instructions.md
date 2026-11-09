@@ -13,9 +13,10 @@ Follow this workflow in order. Do not skip steps.
 
 ### Step 1 - View Loaded Workbooks / Load Some Workbooks
 
-It is possible that some workbooks have already been loaded into the session. You can view all loaded workbooks by calling `list_workbooks()`. This will return a list of workbook names.
+It is possible that some workbooks have already been loaded into the session. You can view all loaded workbooks by calling `list_loaded_workbooks()`. This will return a list of workbook names.
 
 If the data returned is sufficient for your task, you can skip to Step 2. Otherwise, you will need to load additional workbooks.
+You can list all available workbooks in the workspace by calling `list_available_workbooks()`.
 
 You should **never** attempt to load a workbook that has already been loaded.
 

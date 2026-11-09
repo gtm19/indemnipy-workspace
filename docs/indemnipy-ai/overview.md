@@ -16,7 +16,8 @@ Capabilities are reusable bundles of tools and system instructions that you atta
 
 When this capability is active, the agent can:
 
-- **Load workbooks** — by file path (files must be local)
+- **Browse for workbooks** — discover available `.xlsx` and `.xlsm` files within the configured `base_dir`
+- **Load workbooks** — by file path, sandboxed to the workspace root
 - **Inspect worksheets** — browse sheet names, cell ranges, and dimension metadata
 - **Discover tables** — named tables are picked up automatically; unformatted ranges can be promoted to named tables on demand
 - **Preview and query** — read and aggregate table data using DuckDB SQL, without modifying the source file
@@ -28,9 +29,10 @@ The capability registers the following tools on the agent:
 
 | Tool | Description |
 |------|-------------|
-| `load_workbook` | Load a local spreadsheet into the session |
-| `list_workbooks` | Summarise all loaded workbooks |
-| `list_worksheets` | List sheet metadata for a workbook |
+| `list_available_workbooks` | List all `.xlsx` / `.xlsm` files discoverable within the workspace |
+| `load_workbook` | Load a spreadsheet from the workspace into the session |
+| `list_loaded_workbooks` | Summarise all loaded workbooks |
+| `list_worksheets_from_loaded_workbook` | List sheet metadata for a workbook |
 | `list_tables_and_metadata` | Return table names and column schemas |
 | `get_range` | Read a raw cell range as a list of lists |
 | `add_table_from_range` | Register an unformatted range as a named table |

@@ -1,14 +1,22 @@
 import functools
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import Any
 
 from pydantic_ai import RunContext
 from pydantic_ai.capabilities import AbstractCapability
 from pydantic_ai.toolsets import FunctionToolset
+from pydantic_ai.workspaces import (
+    LocalWorkspaceBackend,
+    ReadOnlyWorkspace,
+    Workspace,
+    WorkspaceBackend,
+    WorkspaceRef,
+)
 from typing_extensions import override
 
 from indemnipy_ai.capabilities.excel._capability_state import ExcelRuntimeState
+from indemnipy_ai.capabilities.excel._deps import ExcelDeps
 from indemnipy_ai.capabilities.excel._functions import DateParsingOptions
 
 from ._toolset import _ExcelToolset
@@ -19,25 +27,6 @@ CURRENT_DIR = Path(__file__).parent
 @functools.cache
 def _load_capability_instructions() -> str:
     return (CURRENT_DIR / "_capability_instructions.md").read_text()
-
-
-@runtime_checkable
-class ExcelDeps(Protocol):
-    """Dependency protocol for spreadsheet capabilities.
-
-    Any object that has an ``excel_runtime_state`` attribute of type
-    [ExcelRuntimeState][indemnipy_ai.capabilities.excel.ExcelRuntimeState]
-    satisfies this protocol — no explicit inheritance is required.
-
-    Pass the same instance across multiple agent runs to preserve loaded
-    workbooks and derived tables between turns in a multi-turn conversation.
-
-    Attributes:
-        excel_runtime_state: Mutable state holding loaded workbooks and derived
-            tables.
-    """
-
-    excel_runtime_state: ExcelRuntimeState
 
 
 @dataclass
@@ -59,6 +48,8 @@ class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
 
     Attributes:
         id: Capability identifier registered with the agent's toolset.
+        description: Human-readable description of the capability.
+        base_dir: Base directory used to locate spreadsheet files.
         runtime_state: Fallback state used when deps does not implement
             [`ExcelDeps`][indemnipy_ai.capabilities.excel.ExcelDeps].
         date_parsing_options: Controls how mixed-format or ambiguous date
@@ -67,6 +58,7 @@ class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
 
     id: str | None = "indemnipy-ai.capabilities.excel"
     description: str | None = "Provides tools for reading and analysing spreadsheets."
+    base_dir: Path = Path(".")
 
     runtime_state: "ExcelRuntimeState" = field(default_factory=ExcelRuntimeState)
     date_parsing_options: DateParsingOptions = field(
@@ -94,6 +86,7 @@ class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
         return ExcelCapability(
             id=self.id,
             description=self.description,
+            base_dir=self.base_dir,
             runtime_state=runtime_state,
             date_parsing_options=self.date_parsing_options,
         )
@@ -119,9 +112,19 @@ class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
 
         if self.runtime_state.spreadsheets:
             for file_path in self.runtime_state.spreadsheets:
-                _ = excel_toolset_builder.load_workbook(file_path)
+                _ = excel_toolset_builder._load_workbook(file_path)
         return excel_toolset_builder.toolset()
 
     @override
     def get_instructions(self) -> str:
         return _load_capability_instructions()
+
+    @override
+    def get_workspace(
+        self,
+        ctx: RunContext[ExcelDeps | Any],
+        *,
+        ref: WorkspaceRef | None,
+    ) -> WorkspaceBackend | None:
+        backend = LocalWorkspaceBackend(working_dir=self.base_dir)
+        return ReadOnlyWorkspace(Workspace(backend))
