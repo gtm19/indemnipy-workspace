@@ -1,4 +1,5 @@
 import logging
+import posixpath
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -6,10 +7,11 @@ from typing import Any, NamedTuple, TypeAlias
 
 import duckdb
 from pydantic import BaseModel
-from pydantic_ai import ModelRetry, Tool
+from pydantic_ai import ModelRetry, RunContext, Tool, ToolFailed
 from pydantic_ai.toolsets import FunctionToolset
 
 from indemnipy_ai.capabilities.excel._capability_state import ExcelRuntimeState
+from indemnipy_ai.capabilities.excel._deps import ExcelDeps
 from indemnipy_ai.capabilities.excel._functions import DateParsingOptions, _print_df
 from indemnipy_ai.capabilities.excel._models import _ExcelWorkbook
 from indemnipy_ai.capabilities.excel._workbook_protocol import (
@@ -25,6 +27,8 @@ _TableSchema: TypeAlias = dict[str, _ColumnSchema]
 _SheetSchema: TypeAlias = dict[str, _TableSchema]
 # {workbook_name: _SheetSchema}
 _WorkbookSchema: TypeAlias = dict[str, _SheetSchema]
+
+_VALID_EXTENSIONS: set[str] = {".xlsx", ".xlsm"}
 
 
 class _SheetInfo(BaseModel):
@@ -84,7 +88,29 @@ class _ExcelToolset:
             return None
         return next((t for t in sheet.tables if t.name == table_name), None)
 
-    def load_workbook(self, file_path: Path) -> str:
+    async def list_available_workbooks(
+        self, ctx: RunContext[ExcelDeps | Any]
+    ) -> list[Path]:
+        """
+        List the paths of all available workbooks within the workspace.
+
+        Returns:
+            A list of paths to the available workbooks.
+        """
+        ws = ctx.workspace
+        ws_path = Path(await ws.working_dir())
+        files = [
+            p
+            for p in ws_path.rglob("*")
+            if p.is_file()
+            and p.suffix.lower() in _VALID_EXTENSIONS
+            and not p.name.startswith("~$")
+        ]
+        return files
+
+    async def load_workbook(
+        self, ctx: RunContext[ExcelDeps | Any], file_path: Path
+    ) -> str:
         """
         Load a workbook and add it to the capability's workbooks list.
 
@@ -94,6 +120,19 @@ class _ExcelToolset:
         Returns:
             The key under which the workbook was stored.
         """
+        if file_path.suffix not in _VALID_EXTENSIONS:
+            raise ValueError(
+                f"Invalid file extension: {file_path.suffix}. Must be one of {_VALID_EXTENSIONS}."
+            )
+
+        ws = ctx.workspace
+
+        root = await ws.realpath(await ws.working_dir())
+        target = await ws.realpath(await ws.resolve(str(file_path)))
+
+        if posixpath.commonpath([root, target]) != root:
+            raise ToolFailed(f"File {file_path} is outside the workspace root {root}.")
+
         base = file_path.name
         existing = [
             k
@@ -107,9 +146,9 @@ class _ExcelToolset:
         self.runtime_state.workbooks[key] = workbook
         return key
 
-    def list_workbooks(self) -> str:
+    def list_loaded_workbooks(self) -> str:
         """
-        List information about all workbooks.
+        List information about all loaded workbooks.
 
         Returns:
             A string representation of the workbooks and their sheets / tables
@@ -117,7 +156,7 @@ class _ExcelToolset:
         summaries = [wb.agent_summary() for wb in self.runtime_state.workbooks.values()]
         return "\n\n".join(summaries) if summaries else "No workbooks loaded."
 
-    def list_worksheets(
+    def list_worksheets_from_loaded_workbook(
         self, workbook_name: str | None = None
     ) -> dict[str, list[_SheetInfo]] | None:
         """
@@ -447,19 +486,20 @@ class _ExcelToolset:
         return _print_df(table.dataframe[offset : offset + n_rows], hide_shape=True)
 
     def toolset(self) -> FunctionToolset:
-        functions: set[Callable[..., Any]] = {
-            self.load_workbook,
-            self.list_workbooks,
-            self.get_workbook_vba,
-            self.list_tables_and_metadata,
-            self.preview_table,
-            self.query_table,
-            self.list_worksheets,
-            self.get_range,
-            self.add_table_from_range,
-            self.query_store_and_preview,
-            self.list_derived_tables,
-            self.preview_derived_table,
+        functions: set[tuple[Callable[..., Any], bool]] = {
+            (self.list_available_workbooks, True),
+            (self.load_workbook, True),
+            (self.list_loaded_workbooks, False),
+            (self.get_workbook_vba, False),
+            (self.list_tables_and_metadata, False),
+            (self.preview_table, False),
+            (self.query_table, False),
+            (self.list_worksheets_from_loaded_workbook, False),
+            (self.get_range, False),
+            (self.add_table_from_range, False),
+            (self.query_store_and_preview, False),
+            (self.list_derived_tables, False),
+            (self.preview_derived_table, False),
         }
 
         excel_toolset = FunctionToolset(
@@ -468,8 +508,9 @@ class _ExcelToolset:
                     fn,
                     name=fn.__name__,
                     description=fn.__doc__ or "",
+                    takes_ctx=takes_ctx,
                 )
-                for fn in functions
+                for fn, takes_ctx in functions
             ],
             id=self.id,
         )

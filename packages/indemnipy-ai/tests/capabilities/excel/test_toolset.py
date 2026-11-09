@@ -57,12 +57,12 @@ def test_load_workbook_deduplicates_keys_with_numeric_suffix():
 
 def test_list_workbooks_empty():
     ts = _make_toolset()
-    assert ts.list_workbooks() == snapshot("No workbooks loaded.")
+    assert ts.list_loaded_workbooks() == snapshot("No workbooks loaded.")
 
 
 def test_list_workbooks_after_load_contains_filename():
     ts = _make_toolset(XLSX)
-    result = ts.list_workbooks()
+    result = ts.list_loaded_workbooks()
     assert XLSX_KEY in result
     assert "Workbook:" in result
 
@@ -74,7 +74,7 @@ def test_list_workbooks_after_load_contains_filename():
 
 def test_list_worksheets_with_workbook_name():
     ts = _make_toolset(XLSX)
-    result = ts.list_worksheets(XLSX_KEY)
+    result = ts.list_worksheets_from_loaded_workbook(XLSX_KEY)
     assert result is not None
     assert {k: [s.model_dump() for s in v] for k, v in result.items()} == snapshot(
         {
@@ -130,7 +130,7 @@ def test_list_worksheets_with_workbook_name():
 
 def test_list_worksheets_without_name_returns_all_workbooks():
     ts = _make_toolset(XLSX)
-    result = ts.list_worksheets()
+    result = ts.list_worksheets_from_loaded_workbook()
     assert result is not None
     assert XLSX_KEY in result
     assert len(result[XLSX_KEY]) == 4  # Information, Claims, Locations, Sendings
@@ -138,7 +138,7 @@ def test_list_worksheets_without_name_returns_all_workbooks():
 
 def test_list_worksheets_returns_none_for_unknown_workbook():
     ts = _make_toolset(XLSX)
-    assert ts.list_worksheets("does-not-exist.xlsx") is None
+    assert ts.list_worksheets_from_loaded_workbook("does-not-exist.xlsx") is None
 
 
 # ---------------------------------------------------------------------------

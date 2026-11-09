@@ -136,15 +136,10 @@ agent = Agent(
 # --8<-- [start:main_run]
 def main():
     deps = Deps(
-        excel_runtime_state=ExcelRuntimeState(
-            spreadsheets=[
-                Path(
-                    "packages/indemnipy-ai/tests/data/Vantris_Pharmaceuticals_STP_Submission_2026.xlsx"
-                )
-            ]
-        ),
+        excel_runtime_state=ExcelRuntimeState(),
     )
     result = agent.run_sync(
+        "Please extract data for Vantris Pharmaceuticals",
         deps=deps,
     )
     print(result.output)
