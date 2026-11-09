@@ -89,20 +89,25 @@ def test_get_instructions_is_cached():
 
 def test_get_toolset_registers_expected_tool_names():
     toolset = ExcelCapability().get_toolset()
-    assert set(toolset.tools.keys()) == {
-        "load_workbook",
-        "list_workbooks",
-        "get_workbook_vba",
-        "list_tables_and_metadata",
-        "preview_table",
-        "query_table",
-        "list_worksheets",
-        "get_range",
-        "add_table_from_range",
-        "query_store_and_preview",
-        "list_derived_tables",
-        "preview_derived_table",
-    }
+    function_names = set(toolset.tools.keys())
+    assert True
+    assert function_names == snapshot(
+        {
+            "add_table_from_range",
+            "get_range",
+            "get_workbook_vba",
+            "list_available_workbooks",
+            "list_derived_tables",
+            "list_loaded_workbooks",
+            "list_tables_and_metadata",
+            "list_worksheets_from_loaded_workbook",
+            "load_workbook",
+            "preview_derived_table",
+            "preview_table",
+            "query_store_and_preview",
+            "query_table",
+        }
+    )
 
 
 def test_get_toolset_preloads_workbooks_listed_in_runtime_state_spreadsheets():

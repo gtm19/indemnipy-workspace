@@ -108,6 +108,24 @@ class _ExcelToolset:
         ]
         return files
 
+    def _load_workbook(self, file_path: Path) -> str:
+        """
+        Synchronously load a workbook into the runtime state.
+        """
+        base = file_path.name
+        existing = [
+            k
+            for k in self.runtime_state.workbooks
+            if k == base or k.startswith(base + " (")
+        ]
+        key = f"{base} ({len(existing)})" if existing else base
+
+        workbook = _ExcelWorkbook(
+            filepath=file_path, date_parsing_options=self.date_parsing_options
+        )
+        self.runtime_state.workbooks[key] = workbook
+        return key
+
     async def load_workbook(
         self, ctx: RunContext[ExcelDeps | Any], file_path: Path
     ) -> str:
@@ -133,18 +151,7 @@ class _ExcelToolset:
         if posixpath.commonpath([root, target]) != root:
             raise ToolFailed(f"File {file_path} is outside the workspace root {root}.")
 
-        base = file_path.name
-        existing = [
-            k
-            for k in self.runtime_state.workbooks
-            if k == base or k.startswith(base + " (")
-        ]
-        key = f"{base} ({len(existing)})" if existing else base
-        workbook = _ExcelWorkbook(
-            filepath=file_path, date_parsing_options=self.date_parsing_options
-        )
-        self.runtime_state.workbooks[key] = workbook
-        return key
+        return self._load_workbook(file_path)
 
     def list_loaded_workbooks(self) -> str:
         """

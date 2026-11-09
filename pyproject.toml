@@ -2,43 +2,29 @@
 name = "indemnipy"
 version = "0.1.0"
 requires-python = ">=3.10"
-dependencies = [
-  "indemnipy-ai>=0.1.0",
-]
+dependencies = ["indemnipy-ai>=0.1.0"]
 
 [tool.uv.workspace]
-members = [
-    "packages/*",
-]
+members = ["packages/*"]
 
 [tool.uv.sources]
 indemnipy-ai = { workspace = true }
 
 [dependency-groups]
 dev = [
-    "nox>=2026.8.10",
-    "pre-commit>=4.6.2",
-    "rich>=15.0.0",
-    "logfire[system-metrics]>=4.40.0",
-    "pydantic-ai-harness[codemode]>=0.18.0",
+  "nox>=2026.8.10",
+  "pre-commit>=4.6.2",
+  "rich>=15.0.0",
+  "logfire[system-metrics]>=4.40.0",
+  "pydantic-ai-harness[codemode]>=0.18.0",
 ]
-test = [
-    "pytest>=9.1.1",
-    "inline-snapshot>=0.35.3",
-]
-docs = [
-    "zensical==0.0.54",
-    "mkdocstrings[python]>=0.27",
-]
-lint = [
-    "ruff>=0.16.4",
-]
-typecheck = [
-    "basedpyright>=1.39.10",
-]
+test = ["pytest>=9.1.1", "inline-snapshot>=0.36.1"]
+docs = ["zensical==0.0.54", "mkdocstrings[python]>=0.27"]
+lint = ["ruff>=0.16.4"]
+typecheck = ["basedpyright>=1.39.10"]
 
 [tool.inline-snapshot]
-format-command = "ruff format {filename}"
+format-command = "ruff format --stdin-filename {filename}"
 
 [tool.ruff.lint]
 ignore = ["PYI046"]

@@ -110,7 +110,7 @@ class ExcelCapability(AbstractCapability[ExcelDeps | Any]):
 
         if self.runtime_state.spreadsheets:
             for file_path in self.runtime_state.spreadsheets:
-                _ = excel_toolset_builder.load_workbook(file_path)
+                _ = excel_toolset_builder._load_workbook(file_path)
         return excel_toolset_builder.toolset()
 
     @override
