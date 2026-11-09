@@ -30,6 +30,10 @@ CTX = RunContext(
     usage=RunUsage(),
 )
 
+LOC_TABLE = _QueryTable(
+    table="tblLocations", reference_name="loc", workbook=XLSX_KEY, sheet="Locations"
+)
+
 
 async def _make_toolset(path: Path | None = None) -> _ExcelToolset:
     state = ExcelRuntimeState()
@@ -43,6 +47,26 @@ async def _make_toolset(path: Path | None = None) -> _ExcelToolset:
     if path is not None:
         await ts.load_workbook(CTX, path)
     return ts
+
+
+@pytest.fixture
+async def ts_xlsx():
+    return await _make_toolset(XLSX)
+
+
+@pytest.fixture
+async def ts_xlsm():
+    return await _make_toolset(XLSM)
+
+
+@pytest.fixture
+async def ts_with_uk_locs(ts_xlsx):
+    ts_xlsx.query_store_and_preview(
+        tables_used=[LOC_TABLE],
+        query='SELECT "Location ID", "Country" FROM loc WHERE "Country" = \'United Kingdom\'',
+        table_name="uk_locs",
+    )
+    return ts_xlsx
 
 
 # ---------------------------------------------------------------------------
@@ -77,9 +101,8 @@ async def test_list_workbooks_empty():
     assert ts.list_loaded_workbooks() == snapshot("No workbooks loaded.")
 
 
-async def test_list_workbooks_after_load_contains_filename():
-    ts = await _make_toolset(XLSX)
-    result = ts.list_loaded_workbooks()
+async def test_list_workbooks_after_load_contains_filename(ts_xlsx):
+    result = ts_xlsx.list_loaded_workbooks()
     assert XLSX_KEY in result
     assert "Workbook:" in result
 
@@ -89,9 +112,8 @@ async def test_list_workbooks_after_load_contains_filename():
 # ---------------------------------------------------------------------------
 
 
-async def test_list_worksheets_with_workbook_name():
-    ts = await _make_toolset(XLSX)
-    result = ts.list_worksheets_from_loaded_workbook(XLSX_KEY)
+async def test_list_worksheets_with_workbook_name(ts_xlsx):
+    result = ts_xlsx.list_worksheets_from_loaded_workbook(XLSX_KEY)
     assert result is not None
     assert {k: [s.model_dump() for s in v] for k, v in result.items()} == snapshot(
         {
@@ -145,17 +167,15 @@ async def test_list_worksheets_with_workbook_name():
     )
 
 
-async def test_list_worksheets_without_name_returns_all_workbooks():
-    ts = await _make_toolset(XLSX)
-    result = ts.list_worksheets_from_loaded_workbook()
+async def test_list_worksheets_without_name_returns_all_workbooks(ts_xlsx):
+    result = ts_xlsx.list_worksheets_from_loaded_workbook()
     assert result is not None
     assert XLSX_KEY in result
     assert len(result[XLSX_KEY]) == 4  # Information, Claims, Locations, Sendings
 
 
-async def test_list_worksheets_returns_none_for_unknown_workbook():
-    ts = await _make_toolset(XLSX)
-    assert ts.list_worksheets_from_loaded_workbook("does-not-exist.xlsx") is None
+async def test_list_worksheets_returns_none_for_unknown_workbook(ts_xlsx):
+    assert ts_xlsx.list_worksheets_from_loaded_workbook("does-not-exist.xlsx") is None
 
 
 # ---------------------------------------------------------------------------
@@ -163,9 +183,8 @@ async def test_list_worksheets_returns_none_for_unknown_workbook():
 # ---------------------------------------------------------------------------
 
 
-async def test_list_tables_and_metadata():
-    ts = await _make_toolset(XLSX)
-    result = ts.list_tables_and_metadata()
+async def test_list_tables_and_metadata(ts_xlsx):
+    result = ts_xlsx.list_tables_and_metadata()
     assert result == snapshot(
         {
             "Vantris_Pharmaceuticals_STP_Submission_2026.xlsx": {
@@ -212,24 +231,25 @@ async def test_list_tables_and_metadata():
     )
 
 
-async def test_list_tables_and_metadata_with_workbook_name_scopes_to_that_workbook():
-    ts = await _make_toolset(XLSX)
-    result = ts.list_tables_and_metadata(XLSX_KEY)
+async def test_list_tables_and_metadata_with_workbook_name_scopes_to_that_workbook(
+    ts_xlsx,
+):
+    result = ts_xlsx.list_tables_and_metadata(XLSX_KEY)
     assert set(result.keys()) == {XLSX_KEY}
     assert "Locations" in result[XLSX_KEY]
     assert "Sendings" in result[XLSX_KEY]
 
 
-async def test_list_tables_and_metadata_excludes_sheets_with_no_tables():
-    ts = await _make_toolset(XLSX)
-    sheets = ts.list_tables_and_metadata()[XLSX_KEY]
+async def test_list_tables_and_metadata_excludes_sheets_with_no_tables(ts_xlsx):
+    sheets = ts_xlsx.list_tables_and_metadata()[XLSX_KEY]
     assert "Information" not in sheets
     assert "Claims" not in sheets
 
 
-async def test_list_tables_and_metadata_returns_empty_dict_for_unknown_workbook():
-    ts = await _make_toolset(XLSX)
-    assert ts.list_tables_and_metadata("no-such.xlsx") == {}
+async def test_list_tables_and_metadata_returns_empty_dict_for_unknown_workbook(
+    ts_xlsx,
+):
+    assert ts_xlsx.list_tables_and_metadata("no-such.xlsx") == {}
 
 
 # ---------------------------------------------------------------------------
@@ -237,42 +257,37 @@ async def test_list_tables_and_metadata_returns_empty_dict_for_unknown_workbook(
 # ---------------------------------------------------------------------------
 
 
-async def test_preview_table_returns_string_containing_data():
-    ts = await _make_toolset(XLSX)
-    result = ts.preview_table(XLSX_KEY, "Locations", "tblLocations")
+async def test_preview_table_returns_string_containing_data(ts_xlsx):
+    result = ts_xlsx.preview_table(XLSX_KEY, "Locations", "tblLocations")
     assert isinstance(result, str)
     assert "LOC-001" in result
 
 
-async def test_preview_table_returns_none_for_missing_workbook():
-    ts = await _make_toolset(XLSX)
-    assert ts.preview_table("no.xlsx", "Locations", "tblLocations") is None
+@pytest.mark.parametrize(
+    "workbook,sheet,table",
+    [
+        ("no.xlsx", "Locations", "tblLocations"),
+        (XLSX_KEY, "NoSheet", "tblLocations"),
+        (XLSX_KEY, "Locations", "noTable"),
+    ],
+    ids=["missing_workbook", "missing_sheet", "missing_table"],
+)
+async def test_preview_table_returns_none_for_bad_args(ts_xlsx, workbook, sheet, table):
+    assert ts_xlsx.preview_table(workbook, sheet, table) is None
 
 
-async def test_preview_table_returns_none_for_missing_sheet():
-    ts = await _make_toolset(XLSX)
-    assert ts.preview_table(XLSX_KEY, "NoSheet", "tblLocations") is None
-
-
-async def test_preview_table_returns_none_for_missing_table():
-    ts = await _make_toolset(XLSX)
-    assert ts.preview_table(XLSX_KEY, "Locations", "noTable") is None
-
-
-async def test_preview_table_respects_n_rows():
-    ts = await _make_toolset(XLSX)
+async def test_preview_table_respects_n_rows(ts_xlsx):
     # tblLocations has 32 data rows; request only 2
-    result = ts.preview_table(XLSX_KEY, "Locations", "tblLocations", n_rows=2)
+    result = ts_xlsx.preview_table(XLSX_KEY, "Locations", "tblLocations", n_rows=2)
     assert result is not None
     assert result.count("LOC-") == 2
 
 
-async def test_preview_table_respects_offset():
-    ts = await _make_toolset(XLSX)
-    result_from_start = ts.preview_table(
+async def test_preview_table_respects_offset(ts_xlsx):
+    result_from_start = ts_xlsx.preview_table(
         XLSX_KEY, "Locations", "tblLocations", n_rows=1, offset=0
     )
-    result_offset = ts.preview_table(
+    result_offset = ts_xlsx.preview_table(
         XLSX_KEY, "Locations", "tblLocations", n_rows=1, offset=1
     )
     assert result_from_start is not None
@@ -285,9 +300,8 @@ async def test_preview_table_respects_offset():
 # ---------------------------------------------------------------------------
 
 
-async def test_get_range_returns_list_of_lists():
-    ts = await _make_toolset(XLSX)
-    result = ts.get_range(XLSX_KEY, "Information", "B1:C3")
+async def test_get_range_returns_list_of_lists(ts_xlsx):
+    result = ts_xlsx.get_range(XLSX_KEY, "Information", "B1:C3")
     assert result == snapshot(
         [
             ["VANTRIS PHARMACEUTICALS LTD", None],
@@ -303,15 +317,13 @@ async def test_get_range_returns_list_of_lists():
     )
 
 
-async def test_get_range_returns_none_for_missing_workbook():
-    ts = await _make_toolset(XLSX)
-    assert ts.get_range("no.xlsx", "Information", "B1:C3") is None
+async def test_get_range_returns_none_for_missing_workbook(ts_xlsx):
+    assert ts_xlsx.get_range("no.xlsx", "Information", "B1:C3") is None
 
 
-async def test_get_range_raises_model_retry_for_invalid_range():
-    ts = await _make_toolset(XLSX)
+async def test_get_range_raises_model_retry_for_invalid_range(ts_xlsx):
     with pytest.raises(ModelRetry):
-        ts.get_range(XLSX_KEY, "Information", "NOT_A_RANGE")
+        ts_xlsx.get_range(XLSX_KEY, "Information", "NOT_A_RANGE")
 
 
 # ---------------------------------------------------------------------------
@@ -319,9 +331,8 @@ async def test_get_range_raises_model_retry_for_invalid_range():
 # ---------------------------------------------------------------------------
 
 
-async def test_add_table_from_range_success():
-    ts = await _make_toolset(XLSX)
-    result = ts.add_table_from_range(XLSX_KEY, "Locations", "A1:C3", "myTable")
+async def test_add_table_from_range_success(ts_xlsx):
+    result = ts_xlsx.add_table_from_range(XLSX_KEY, "Locations", "A1:C3", "myTable")
     assert result == snapshot(
         {
             "myTable": {
@@ -331,19 +342,18 @@ async def test_add_table_from_range_success():
             }
         }
     )
-    # Table is now visible to other toolset methods
-    assert ts.preview_table(XLSX_KEY, "Locations", "myTable") is not None
+    assert ts_xlsx.preview_table(XLSX_KEY, "Locations", "myTable") is not None
 
 
-async def test_add_table_from_range_returns_none_for_missing_workbook():
-    ts = await _make_toolset(XLSX)
-    assert ts.add_table_from_range("no.xlsx", "Locations", "A1:C3", "t") is None
+async def test_add_table_from_range_returns_none_for_missing_workbook(ts_xlsx):
+    assert ts_xlsx.add_table_from_range("no.xlsx", "Locations", "A1:C3", "t") is None
 
 
-async def test_add_table_from_range_raises_model_retry_for_duplicate_table_name():
-    ts = await _make_toolset(XLSX)
+async def test_add_table_from_range_raises_model_retry_for_duplicate_table_name(
+    ts_xlsx,
+):
     with pytest.raises(ModelRetry, match="already exists"):
-        ts.add_table_from_range(XLSX_KEY, "Locations", "A1:C3", "tblLocations")
+        ts_xlsx.add_table_from_range(XLSX_KEY, "Locations", "A1:C3", "tblLocations")
 
 
 # ---------------------------------------------------------------------------
@@ -351,9 +361,8 @@ async def test_add_table_from_range_raises_model_retry_for_duplicate_table_name(
 # ---------------------------------------------------------------------------
 
 
-async def test_query_table_returns_formatted_string():
-    ts = await _make_toolset(XLSX)
-    result = ts.query_table(
+async def test_query_table_returns_formatted_string(ts_xlsx):
+    result = ts_xlsx.query_table(
         XLSX_KEY,
         "Locations",
         "tblLocations",
@@ -369,25 +378,22 @@ async def test_query_table_returns_formatted_string():
     )
 
 
-async def test_query_table_returns_none_for_missing_workbook():
-    ts = await _make_toolset(XLSX)
-    assert ts.query_table("no.xlsx", "Locations", "tblLocations", "SELECT 1") is None
+@pytest.mark.parametrize(
+    "workbook,sheet,table",
+    [
+        ("no.xlsx", "Locations", "tblLocations"),
+        (XLSX_KEY, "NoSheet", "tblLocations"),
+        (XLSX_KEY, "Locations", "noTable"),
+    ],
+    ids=["missing_workbook", "missing_sheet", "missing_table"],
+)
+async def test_query_table_returns_none_for_bad_args(ts_xlsx, workbook, sheet, table):
+    assert ts_xlsx.query_table(workbook, sheet, table, "SELECT 1") is None
 
 
-async def test_query_table_returns_none_for_missing_sheet():
-    ts = await _make_toolset(XLSX)
-    assert ts.query_table(XLSX_KEY, "NoSheet", "tblLocations", "SELECT 1") is None
-
-
-async def test_query_table_returns_none_for_missing_table():
-    ts = await _make_toolset(XLSX)
-    assert ts.query_table(XLSX_KEY, "Locations", "noTable", "SELECT 1") is None
-
-
-async def test_query_table_raises_model_retry_for_bad_sql():
-    ts = await _make_toolset(XLSX)
+async def test_query_table_raises_model_retry_for_bad_sql(ts_xlsx):
     with pytest.raises(ModelRetry):
-        ts.query_table(
+        ts_xlsx.query_table(
             XLSX_KEY, "Locations", "tblLocations", "SELECT FROM WHERE BROKEN"
         )
 
@@ -397,9 +403,8 @@ async def test_query_table_raises_model_retry_for_bad_sql():
 # ---------------------------------------------------------------------------
 
 
-async def test_get_workbook_vba_returns_markdown_for_xlsm():
-    ts = await _make_toolset(XLSM)
-    result = ts.get_workbook_vba(XLSM_KEY)
+async def test_get_workbook_vba_returns_markdown_for_xlsm(ts_xlsm):
+    result = ts_xlsm.get_workbook_vba(XLSM_KEY)
     assert isinstance(result, str)
     assert result.startswith(
         "# VBA Macros in Vantris_Pharmaceuticals_STP_Submission_2026.xlsm"
@@ -408,14 +413,11 @@ async def test_get_workbook_vba_returns_markdown_for_xlsm():
     assert "```vba" in result
 
 
-async def test_get_workbook_vba_returns_none_for_xlsx_without_macros():
-    ts = await _make_toolset(XLSX)
-    assert ts.get_workbook_vba(XLSX_KEY) is None
-
-
-async def test_get_workbook_vba_returns_none_for_unknown_workbook():
-    ts = await _make_toolset(XLSX)
-    assert ts.get_workbook_vba("no.xlsm") is None
+@pytest.mark.parametrize(
+    "key", [XLSX_KEY, "no.xlsm"], ids=["xlsx_no_macros", "unknown_key"]
+)
+async def test_get_workbook_vba_returns_none(ts_xlsx, key):
+    assert ts_xlsx.get_workbook_vba(key) is None
 
 
 # ---------------------------------------------------------------------------
@@ -423,17 +425,9 @@ async def test_get_workbook_vba_returns_none_for_unknown_workbook():
 # ---------------------------------------------------------------------------
 
 
-async def test_query_store_and_preview_stores_result_and_returns_query_result():
-    ts = await _make_toolset(XLSX)
-    result = ts.query_store_and_preview(
-        tables_used=[
-            _QueryTable(
-                table="tblLocations",
-                reference_name="loc",
-                workbook=XLSX_KEY,
-                sheet="Locations",
-            )
-        ],
+async def test_query_store_and_preview_stores_result_and_returns_query_result(ts_xlsx):
+    result = ts_xlsx.query_store_and_preview(
+        tables_used=[LOC_TABLE],
         query='SELECT "Location ID", "Country" FROM loc WHERE "Country" = \'United Kingdom\'',
         table_name="uk_locs",
         preview_rows=3,
@@ -449,13 +443,14 @@ async def test_query_store_and_preview_stores_result_and_returns_query_result():
         " LOC-002      United Kingdom \n"
         " LOC-008      United Kingdom "
     )
-    assert "uk_locs" in ts.runtime_state.derived_tables
+    assert "uk_locs" in ts_xlsx.runtime_state.derived_tables
 
 
-async def test_query_store_and_preview_raises_model_retry_when_sheet_missing_for_workbook_table():
-    ts = await _make_toolset(XLSX)
+async def test_query_store_and_preview_raises_model_retry_when_sheet_missing_for_workbook_table(
+    ts_xlsx,
+):
     with pytest.raises(ModelRetry, match="sheet is required"):
-        ts.query_store_and_preview(
+        ts_xlsx.query_store_and_preview(
             tables_used=[
                 _QueryTable(
                     table="tblLocations",
@@ -469,10 +464,11 @@ async def test_query_store_and_preview_raises_model_retry_when_sheet_missing_for
         )
 
 
-async def test_query_store_and_preview_raises_model_retry_for_missing_workbook_table():
-    ts = await _make_toolset(XLSX)
+async def test_query_store_and_preview_raises_model_retry_for_missing_workbook_table(
+    ts_xlsx,
+):
     with pytest.raises(ModelRetry, match="not found"):
-        ts.query_store_and_preview(
+        ts_xlsx.query_store_and_preview(
             tables_used=[
                 _QueryTable(
                     table="noTable",
@@ -486,28 +482,21 @@ async def test_query_store_and_preview_raises_model_retry_for_missing_workbook_t
         )
 
 
-async def test_query_store_and_preview_raises_model_retry_for_missing_derived_table():
-    ts = await _make_toolset(XLSX)
+async def test_query_store_and_preview_raises_model_retry_for_missing_derived_table(
+    ts_xlsx,
+):
     with pytest.raises(ModelRetry, match="not found"):
-        ts.query_store_and_preview(
+        ts_xlsx.query_store_and_preview(
             tables_used=[_QueryTable(table="ghost", reference_name="g")],
             query="SELECT * FROM g",
             table_name="out",
         )
 
 
-async def test_query_store_and_preview_raises_model_retry_for_bad_sql():
-    ts = await _make_toolset(XLSX)
+async def test_query_store_and_preview_raises_model_retry_for_bad_sql(ts_xlsx):
     with pytest.raises(ModelRetry):
-        ts.query_store_and_preview(
-            tables_used=[
-                _QueryTable(
-                    table="tblLocations",
-                    reference_name="t",
-                    workbook=XLSX_KEY,
-                    sheet="Locations",
-                )
-            ],
+        ts_xlsx.query_store_and_preview(
+            tables_used=[LOC_TABLE],
             query="SELECT FROM WHERE BROKEN",
             table_name="out",
         )
@@ -518,26 +507,17 @@ async def test_query_store_and_preview_raises_model_retry_for_bad_sql():
 # ---------------------------------------------------------------------------
 
 
-async def test_list_derived_tables_is_empty_before_any_queries():
-    ts = await _make_toolset(XLSX)
-    assert ts.list_derived_tables() == {}
+async def test_list_derived_tables_is_empty_before_any_queries(ts_xlsx):
+    assert ts_xlsx.list_derived_tables() == {}
 
 
-async def test_list_derived_tables_populated_after_query_store_and_preview():
-    ts = await _make_toolset(XLSX)
-    ts.query_store_and_preview(
-        tables_used=[
-            _QueryTable(
-                table="tblLocations",
-                reference_name="t",
-                workbook=XLSX_KEY,
-                sheet="Locations",
-            )
-        ],
-        query='SELECT "Location ID", "Country" FROM t LIMIT 5',
+async def test_list_derived_tables_populated_after_query_store_and_preview(ts_xlsx):
+    ts_xlsx.query_store_and_preview(
+        tables_used=[LOC_TABLE],
+        query='SELECT "Location ID", "Country" FROM loc LIMIT 5',
         table_name="sample",
     )
-    assert ts.list_derived_tables() == snapshot(
+    assert ts_xlsx.list_derived_tables() == snapshot(
         {"sample": {"Location ID": "String", "Country": "String"}}
     )
 
@@ -547,26 +527,12 @@ async def test_list_derived_tables_populated_after_query_store_and_preview():
 # ---------------------------------------------------------------------------
 
 
-async def test_preview_derived_table_returns_none_for_unknown_table():
-    ts = await _make_toolset(XLSX)
-    assert ts.preview_derived_table("ghost") is None
+async def test_preview_derived_table_returns_none_for_unknown_table(ts_xlsx):
+    assert ts_xlsx.preview_derived_table("ghost") is None
 
 
-async def test_preview_derived_table_returns_string_for_known_table():
-    ts = await _make_toolset(XLSX)
-    ts.query_store_and_preview(
-        tables_used=[
-            _QueryTable(
-                table="tblLocations",
-                reference_name="loc",
-                workbook=XLSX_KEY,
-                sheet="Locations",
-            )
-        ],
-        query='SELECT "Location ID", "Country" FROM loc WHERE "Country" = \'United Kingdom\'',
-        table_name="uk_locs",
-    )
-    result = ts.preview_derived_table("uk_locs", n_rows=2)
+async def test_preview_derived_table_returns_string_for_known_table(ts_with_uk_locs):
+    result = ts_with_uk_locs.preview_derived_table("uk_locs", n_rows=2)
     assert result == snapshot(
         " Location ID  Country        \n"
         " ---          ---            \n"
@@ -576,22 +542,9 @@ async def test_preview_derived_table_returns_string_for_known_table():
     )
 
 
-async def test_preview_derived_table_respects_n_rows_and_offset():
-    ts = await _make_toolset(XLSX)
-    ts.query_store_and_preview(
-        tables_used=[
-            _QueryTable(
-                table="tblLocations",
-                reference_name="loc",
-                workbook=XLSX_KEY,
-                sheet="Locations",
-            )
-        ],
-        query='SELECT "Location ID", "Country" FROM loc WHERE "Country" = \'United Kingdom\'',
-        table_name="uk_locs",
-    )
-    r1 = ts.preview_derived_table("uk_locs", n_rows=1, offset=0)
-    r2 = ts.preview_derived_table("uk_locs", n_rows=1, offset=1)
+async def test_preview_derived_table_respects_n_rows_and_offset(ts_with_uk_locs):
+    r1 = ts_with_uk_locs.preview_derived_table("uk_locs", n_rows=1, offset=0)
+    r2 = ts_with_uk_locs.preview_derived_table("uk_locs", n_rows=1, offset=1)
     assert r1 is not None and r2 is not None
     assert r1 != r2
 
@@ -601,12 +554,11 @@ async def test_preview_derived_table_respects_n_rows_and_offset():
 # ---------------------------------------------------------------------------
 
 
-async def test_query_table_cannot_read_arbitrary_csv(tmp_path):
+async def test_query_table_cannot_read_arbitrary_csv(ts_xlsx, tmp_path):
     csv_file = tmp_path / "secret.csv"
     csv_file.write_text("a,b\n1,2\n3,4\n")
-    ts = await _make_toolset(XLSX)
     with pytest.raises(ModelRetry):
-        ts.query_table(
+        ts_xlsx.query_table(
             XLSX_KEY,
             "Locations",
             "tblLocations",
@@ -614,11 +566,10 @@ async def test_query_table_cannot_read_arbitrary_csv(tmp_path):
         )
 
 
-async def test_query_table_cannot_write_file_to_disk(tmp_path):
+async def test_query_table_cannot_write_file_to_disk(ts_xlsx, tmp_path):
     out_file = tmp_path / "output.csv"
-    ts = await _make_toolset(XLSX)
     with pytest.raises(ModelRetry):
-        ts.query_table(
+        ts_xlsx.query_table(
             XLSX_KEY,
             "Locations",
             "tblLocations",
@@ -627,38 +578,22 @@ async def test_query_table_cannot_write_file_to_disk(tmp_path):
     assert not out_file.exists()
 
 
-async def test_query_store_and_preview_cannot_read_arbitrary_csv(tmp_path):
+async def test_query_store_and_preview_cannot_read_arbitrary_csv(ts_xlsx, tmp_path):
     csv_file = tmp_path / "secret.csv"
     csv_file.write_text("a,b\n1,2\n3,4\n")
-    ts = await _make_toolset(XLSX)
     with pytest.raises(ModelRetry):
-        ts.query_store_and_preview(
-            tables_used=[
-                _QueryTable(
-                    table="tblLocations",
-                    reference_name="loc",
-                    workbook=XLSX_KEY,
-                    sheet="Locations",
-                )
-            ],
+        ts_xlsx.query_store_and_preview(
+            tables_used=[LOC_TABLE],
             query=f"SELECT * FROM read_csv('{csv_file}')",
             table_name="injected",
         )
 
 
-async def test_query_store_and_preview_cannot_write_file_to_disk(tmp_path):
+async def test_query_store_and_preview_cannot_write_file_to_disk(ts_xlsx, tmp_path):
     out_file = tmp_path / "output.csv"
-    ts = await _make_toolset(XLSX)
     with pytest.raises(ModelRetry):
-        ts.query_store_and_preview(
-            tables_used=[
-                _QueryTable(
-                    table="tblLocations",
-                    reference_name="loc",
-                    workbook=XLSX_KEY,
-                    sheet="Locations",
-                )
-            ],
+        ts_xlsx.query_store_and_preview(
+            tables_used=[LOC_TABLE],
             query=f"COPY loc TO '{out_file}'",
             table_name="out",
         )
