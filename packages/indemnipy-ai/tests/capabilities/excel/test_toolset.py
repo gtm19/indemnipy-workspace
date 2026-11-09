@@ -5,7 +5,7 @@ from indemnipy_ai.capabilities.excel._capability_state import ExcelRuntimeState
 from indemnipy_ai.capabilities.excel._functions import DateParsingOptions
 from indemnipy_ai.capabilities.excel._toolset import _ExcelToolset, _QueryTable
 from inline_snapshot import snapshot
-from pydantic_ai import RunContext, RunUsage
+from pydantic_ai import RunContext, RunUsage, ToolFailed
 from pydantic_ai.exceptions import ModelRetry
 from pydantic_ai.models.test import TestModel
 from pydantic_ai.workspaces import (
@@ -89,6 +89,48 @@ async def test_load_workbook_deduplicates_keys_with_numeric_suffix():
     assert k1 == snapshot("Vantris_Pharmaceuticals_STP_Submission_2026.xlsx")
     assert k2 == snapshot("Vantris_Pharmaceuticals_STP_Submission_2026.xlsx (1)")
     assert k3 == snapshot("Vantris_Pharmaceuticals_STP_Submission_2026.xlsx (2)")
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        # workspace escape via path traversal
+        Path("../../evil.xlsx"),
+        Path("../../../evil.xlsx"),
+        Path("subdir/../../../evil.xlsx"),
+        # absolute path outside workspace
+        Path("/etc/passwd.xlsx"),
+        Path("/tmp/evil.xlsx"),
+    ],
+    ids=[
+        "traversal_two_up",
+        "traversal_three_up",
+        "traversal_via_subdir",
+        "absolute_etc",
+        "absolute_tmp",
+    ],
+)
+async def test_load_workbook_rejects_paths_outside_workspace(path):
+    ts = await _make_toolset()
+    with pytest.raises(ToolFailed):
+        await ts.load_workbook(CTX, path)
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        Path("file.csv"),
+        Path("file.xls"),  # legacy Excel format
+        Path("file.txt"),
+        Path("file.zip"),  # xlsx is a zip internally but we don't accept it raw
+        Path("file"),  # no extension
+    ],
+    ids=["csv", "xls", "txt", "zip", "no_extension"],
+)
+async def test_load_workbook_rejects_unsupported_extensions(path):
+    ts = await _make_toolset()
+    with pytest.raises(ToolFailed):
+        await ts.load_workbook(CTX, path)
 
 
 # ---------------------------------------------------------------------------

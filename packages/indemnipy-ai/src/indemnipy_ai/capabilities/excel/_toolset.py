@@ -148,8 +148,8 @@ class _ExcelToolset:
             The key under which the workbook was stored.
         """
         if file_path.suffix not in _VALID_EXTENSIONS:
-            raise ValueError(
-                f"Invalid file extension: {file_path.suffix}. Must be one of {_VALID_EXTENSIONS}."
+            raise ToolFailed(
+                f"Invalid file extension: {file_path.suffix!r}. Must be one of {_VALID_EXTENSIONS}."
             )
 
         ws = ctx.workspace
